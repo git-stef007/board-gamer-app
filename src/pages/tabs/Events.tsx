@@ -13,9 +13,9 @@ import {
   IonActionSheet
 } from '@ionic/react';
 
-import './Tab1.css';
+import './Events.css';
 
-const Tab1: React.FC = () => {
+const Events: React.FC = () => {
   const [showActionSheet, setShowActionSheet] = React.useState(false);
 
   const actionSheetButtons = [
@@ -50,7 +50,7 @@ const Tab1: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
-          <IonTitle>Spieltermin</IonTitle>
+          <IonTitle>Spieltermine</IonTitle>
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="ion-padding">
@@ -80,4 +80,4 @@ const Tab1: React.FC = () => {
   );
 };
 
-export default Tab1;
+export default Events;
