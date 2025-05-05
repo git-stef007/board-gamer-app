@@ -16,6 +16,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { useLocation, useHistory, Link } from "react-router-dom";
 import { auth } from "@/config/firebase";
+import "./Login.css";
 
 const Login: React.FC = () => {
   const location = useLocation();
@@ -48,63 +49,65 @@ const Login: React.FC = () => {
 
   return (
     <IonPage>
-      <IonContent className="ion-padding">
-        <IonCard>
-          <IonCardHeader>
-            <IonCardTitle className="ion-text-center">Login</IonCardTitle>
-          </IonCardHeader>
-          <IonCardContent>
-            <IonItem>
-              <IonInput
-                type="email"
-                value={email}
-                label="Email"
-                labelPlacement="floating"
-                onIonChange={(e) => setEmail(e.detail.value!)}
+      <IonContent className="ion-padding" fullscreen>
+        <div className="login-container">
+          <IonCard>
+            <IonCardHeader>
+              <IonCardTitle className="ion-text-center">Login</IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <IonItem>
+                <IonInput
+                  type="email"
+                  value={email}
+                  label="Email"
+                  labelPlacement="floating"
+                  onIonChange={(e) => setEmail(e.detail.value!)}
+                />
+              </IonItem>
+
+              <IonItem>
+                <IonInput
+                  type="password"
+                  value={password}
+                  label="Passwort"
+                  labelPlacement="floating"
+                  autofocus={!!prefillEmail}
+                  onIonChange={(e) => setPassword(e.detail.value!)}
+                />
+              </IonItem>
+
+              <IonButton
+                expand="block"
+                className="ion-margin-top"
+                onClick={handleLogin}
+              >
+                Einloggen
+              </IonButton>
+
+              <IonText className="ion-text-center signup-footer">
+                <p>
+                  Noch kein Konto? <Link to="/signup">Registrieren</Link>
+                </p>
+              </IonText>
+
+              <IonToast
+                isOpen={showToast}
+                position="top"
+                message={message?.text}
+                duration={2500}
+                color={message?.color}
+                onDidDismiss={() => setShowToast(false)}
               />
-            </IonItem>
 
-            <IonItem>
-              <IonInput
-                type="password"
-                value={password}
-                label="Passwort"
-                labelPlacement="floating"
-                autofocus={!!prefillEmail}
-                onIonChange={(e) => setPassword(e.detail.value!)}
+              <IonLoading
+                isOpen={showLoading}
+                message="Anmeldung läuft..."
+                spinner="crescent"
               />
-            </IonItem>
-
-            <IonButton
-              expand="block"
-              className="ion-margin-top"
-              onClick={handleLogin}
-            >
-              Einloggen
-            </IonButton>
-
-            <IonText className="ion-text-center ion-margin-top">
-              <p>
-                Noch kein Konto? <Link to="/signup">Registrieren</Link>
-              </p>
-            </IonText>
-
-            <IonToast
-              isOpen={showToast}
-              position="top"
-              message={message?.text}
-              duration={2500}
-              color={message?.color}
-              onDidDismiss={() => setShowToast(false)}
-            />
-
-            <IonLoading
-              isOpen={showLoading}
-              message="Anmeldung läuft..."
-              spinner="crescent"
-            />
-          </IonCardContent>
-        </IonCard>
+            </IonCardContent>
+          </IonCard>
+        </div>
       </IonContent>
     </IonPage>
   );
