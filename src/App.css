@@ -49,10 +49,6 @@ ion-item .item-inner ion-label {
   color: var(--ion-item-text-color);
 }
 
-ion-item .item-inner .item-secondary {
-  color: var(--ion-text-color-secondary);
-}
-
 /*ion-item-divider {
   --background: var(--ion-item-divider-background);
 }*/
@@ -76,23 +72,15 @@ ion-picker {
   background-color: var(--ion-item-background);
   --fade-background-rgb: var(--ion-item-background);
   --highlight-background: var(--ion-background-color);
-  --highight-border-radius: var(--ion-background-colord);
+  --highight-border-radius: var(--ion-background-color);
 }
 
 ion-tab-bar {
   --background: var(--ion-item-background);
 }
 
-ion-tab-bar .tab-selected {
-  --color-selected: var(--ion-color-tertiary);
-}
-
 ion-segment-button {
   --indicator-color: var(--ion-background-color-step-350);
-}
-
-ion-toggle {
-  --track-background-checked: var(--ion-color-secondary);
 }
 
 ion-note.list-note {
