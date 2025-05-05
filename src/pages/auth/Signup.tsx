@@ -12,11 +12,9 @@ import {
   IonCardContent,
   IonLoading,
 } from "@ionic/react";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
 import { useState } from "react";
 import { useLocation, useHistory, Link } from "react-router-dom";
-import { auth, db } from "@/config/firebase";
+import { register } from "@/services/auth";
 import "./Signup.css";
 
 const Signup: React.FC = () => {
@@ -32,21 +30,7 @@ const Signup: React.FC = () => {
   const handleRegister = async () => {
     setLoading(true);
     try {
-      const result = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = result.user;
-
-      await updateProfile(user, { displayName });
-
-      await setDoc(doc(db, "users", user.uid), {
-        uid: user.uid,
-        email: user.email,
-        displayName,
-        createdAt: new Date().toISOString(),
-      });
+      await register(displayName, email, password);
 
       history.push("/login", {
         from,

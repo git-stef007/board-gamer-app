@@ -12,11 +12,10 @@ import {
   IonToast,
   IonLoading,
 } from "@ionic/react";
-import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { useLocation, useHistory, Link } from "react-router-dom";
-import { auth } from "@/config/firebase";
 import "./Login.css";
+import { login } from "@/services/auth";
 
 const Login: React.FC = () => {
   const location = useLocation();
@@ -36,7 +35,7 @@ const Login: React.FC = () => {
     const loadingTimeout = setTimeout(() => setShowLoading(true), 300);
 
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      await login(email, password);
       clearTimeout(loadingTimeout);
       setShowLoading(false);
       history.replace(from);
