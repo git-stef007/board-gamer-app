@@ -62,7 +62,7 @@ const Login: React.FC = () => {
                   value={email}
                   label="Email"
                   labelPlacement="floating"
-                  onIonChange={(e) => setEmail(e.detail.value!)}
+                  onIonInput={(e) => setEmail(e.detail.value!)}
                 />
               </IonItem>
 
@@ -73,7 +73,7 @@ const Login: React.FC = () => {
                   label="Passwort"
                   labelPlacement="floating"
                   autofocus={!!prefillEmail}
-                  onIonChange={(e) => setPassword(e.detail.value!)}
+                  onIonInput={(e) => setPassword(e.detail.value!)}
                 />
               </IonItem>
 

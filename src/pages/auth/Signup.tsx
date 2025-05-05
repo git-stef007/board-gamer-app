@@ -77,7 +77,7 @@ const Signup: React.FC = () => {
                   value={displayName}
                   label="Benutzername"
                   labelPlacement="floating"
-                  onIonChange={(e) => setDisplayName(e.detail.value!)}
+                  onIonInput={(e) => setDisplayName(e.detail.value!)}
                 />
               </IonItem>
 
@@ -87,7 +87,7 @@ const Signup: React.FC = () => {
                   value={email}
                   label="Email"
                   labelPlacement="floating"
-                  onIonChange={(e) => setEmail(e.detail.value!)}
+                  onIonInput={(e) => setEmail(e.detail.value!)}
                 />
               </IonItem>
 
@@ -97,7 +97,7 @@ const Signup: React.FC = () => {
                   value={password}
                   label="Passwort"
                   labelPlacement="floating"
-                  onIonChange={(e) => setPassword(e.detail.value!)}
+                  onIonInput={(e) => setPassword(e.detail.value!)}
                 />
               </IonItem>
 
