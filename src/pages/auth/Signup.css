@@ -1,0 +1,16 @@
+.signup-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: 100%;
+}
+
+.signup-container ion-card {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.login-footer p {
+  margin-top: 0.75rem;
+}
