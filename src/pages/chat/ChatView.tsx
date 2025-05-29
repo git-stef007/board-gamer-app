@@ -13,14 +13,20 @@ import {
   IonLabel,
   IonButtons,
   IonBackButton,
+  IonFooter,
 } from "@ionic/react";
 import { sendMessage, subscribeToMessages } from "@/services/chat";
 import { getGroupById } from "@/services/groups";
 import { useAuth } from "@/hooks/useAuth";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
+import {
+  generateHashedColor,
+  generateHashedGradient,
+} from "@/utils/colorGenerator";
+import "./ChatView.css";
 
 const ChatView = () => {
-  const { chatId: groupId } = useParams<{ chatId: string }>(); // still from route /chats/:chatId
+  const { groupId } = useParams<{ groupId: string }>();
   const { user } = useAuth();
   const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -49,7 +55,12 @@ const ChatView = () => {
 
   const handleSend = async () => {
     if (!user || !newMessage.trim()) return;
-    await sendMessage(groupId, user.uid, user.displayName || "Anonym", newMessage);
+    await sendMessage(
+      groupId,
+      user.uid,
+      user.displayName || "Anonym",
+      newMessage
+    );
     setNewMessage("");
   };
 
@@ -74,42 +85,72 @@ const ChatView = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent>
-        <IonList>
-          {messages.map((msg) => (
-            <IonItem
-              key={msg.id}
-              lines="none"
-              className={user?.uid === msg.senderId ? "my-message" : "other-message"}
-            >
-              <IonLabel>
-                {user?.uid !== msg.senderId && (
-                  <div className="sender-name">{msg.senderName}</div>
-                )}
-                <div className="message-content">{msg.content}</div>
-                <div className="message-time">
-                  {msg.createdAt?.toDate
-                    ? new Date(msg.createdAt.toDate()).toLocaleTimeString("de-DE", {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })
-                    : ""}
+        <IonContent className="chat-view-content">
+          <div className="chat-messages">
+            {messages.map((msg) => {
+              const isOwn = user?.uid === msg.senderId;
+              return (
+                <div
+                  key={msg.id}
+                  className={`message-bubble ${isOwn ? "own" : "other"}`}
+                >
+                  {!isOwn && (
+                    <div
+                      className="message-avatar"
+                      style={{
+                        background: generateHashedGradient(msg.senderId),
+                      }}
+                    />
+                  )}
+
+                  <div className="message-meta">
+                    {!isOwn && (
+                      <div
+                        className="sender-name"
+                        style={{ color: generateHashedColor(msg.senderId) }}
+                      >
+                        {msg.senderName}
+                      </div>
+                    )}
+                    <div className="message-content">{msg.content}</div>
+                    <div className="message-time">
+                      {msg.createdAt?.toDate
+                        ? new Date(msg.createdAt.toDate()).toLocaleTimeString(
+                            "de-DE",
+                            {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }
+                          )
+                        : ""}
+                    </div>
+                  </div>
                 </div>
-              </IonLabel>
-            </IonItem>
-          ))}
-          <div ref={bottomRef} />
-        </IonList>
+              );
+            })}
+            <div ref={bottomRef} />
+          </div>
+        </IonContent>
       </IonContent>
-      <div className="message-input-container">
-        <IonInput
-          placeholder="Nachricht schreiben..."
-          value={newMessage}
-          onIonInput={(e) => setNewMessage(e.detail.value!)}
-          onKeyDown={handleKeyDown}
-          className="message-input"
-        />
-        <IonButton onClick={handleSend}>Senden</IonButton>
-      </div>
+      <IonFooter className="chat-input-footer">
+        <div className="chat-input-bar">
+          <IonInput
+            placeholder="Nachricht schreiben..."
+            value={newMessage}
+            onIonInput={(e) => setNewMessage(e.detail.value!)}
+            onKeyDown={handleKeyDown}
+            className="chat-input"
+          />
+          <IonButton
+            onClick={handleSend}
+            shape="round"
+            color="primary"
+            className="send-button"
+          >
+            Senden
+          </IonButton>
+        </div>
+      </IonFooter>
     </IonPage>
   );
 };

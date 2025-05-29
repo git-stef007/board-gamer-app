@@ -75,7 +75,7 @@ const App: React.FC = () => {
                     <Route path="/chats" exact>
                       <ChatsList />
                     </Route>
-                    <Route path="/chats/:chatId" exact>
+                    <Route path="/chats/:groupId" exact>
                       <ChatView />
                     </Route>
                     <Route exact path="/">

@@ -11,6 +11,10 @@ ion-fab-button:hover {
 }
 
 /* Group list styling */
+IonCard {
+  position: relative;
+}
+
 .group-card-header {
   height: 120px;
   overflow: hidden;
@@ -29,12 +33,14 @@ ion-fab-button:hover {
 .default-group-image {
   width: 100%;
   height: 100%;
+  border-radius: 0 !important;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 3rem;
-  color: var(--ion-color-medium);
-  background-color: var(--ion-color-light-shade);
+  color: white;
+  background: linear-gradient(90deg, #ff8a00, #e52e71); /* fallback */
+  flex-shrink: 0;
 }
 
 .group-location {
@@ -45,6 +51,14 @@ ion-fab-button:hover {
   color: var(--ion-color-medium);
   font-size: 14px;
   margin-bottom: 12px;
+}
+
+.group-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 1;
+  background-color: var(--ion-color-primary);
 }
 
 .empty-groups-container {

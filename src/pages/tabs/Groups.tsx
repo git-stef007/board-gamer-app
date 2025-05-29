@@ -49,7 +49,8 @@ import {
   getDocs,
   orderBy,
 } from "firebase/firestore";
-import { generateHashedGradient } from "@/utils/generateHashedGradient";
+import { generateHashedGradient } from "@/utils/colorGenerator";
+import { formatDate } from "@/utils/timeFormatter";
 
 interface Group {
   id: string;
@@ -70,37 +71,21 @@ const Groups: React.FC = () => {
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch groups where the current user is a member
+  // Fetch all groups
   useEffect(() => {
     const fetchGroups = async () => {
-      if (!user) {
-        setGroups([]);
-        setLoading(false);
-        return;
-      }
-
       setLoading(true);
       try {
         const db = getFirestore();
-        const q = query(
-          collection(db, "groups"),
-          where("memberIds", "array-contains", user.uid),
-          orderBy("createdAt", "desc")
-        );
-
-        const querySnapshot = await getDocs(q);
-        const groupsList: Group[] = [];
-
-        querySnapshot.forEach((doc) => {
-          groupsList.push({
-            id: doc.id,
-            ...doc.data(),
-          } as Group);
-        });
-
+        const q = query(collection(db, "groups"), orderBy("createdAt", "desc"));
+        const snapshot = await getDocs(q);
+        const groupsList: Group[] = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Group[];
         setGroups(groupsList);
       } catch (error) {
-        console.error("Error fetching groups:", error);
+        console.error("Fehler beim Laden der Gruppen:", error);
         setToastMessage("Fehler beim Laden der Gruppen");
         setShowToast(true);
       } finally {
@@ -109,7 +94,7 @@ const Groups: React.FC = () => {
     };
 
     fetchGroups();
-  }, [user]);
+  }, []);
 
   const handleCreateGroup = () => {
     setShowModal(true);
@@ -164,16 +149,6 @@ const Groups: React.FC = () => {
     }
   };
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return "";
-    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-    return date.toLocaleDateString("de-DE", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   return (
     <IonPage>
       <IonHeader>
@@ -213,17 +188,18 @@ const Groups: React.FC = () => {
                     <div
                       className="default-group-image"
                       style={{
-                        background: generateHashedGradient(
-                          group.name + 
-                          group.createdBy + 
-                          group.createdAt?.toMillis?.().toString() || ""
-                        ),
+                        background: generateHashedGradient(group.id),
                       }}
                     >
                       <IonIcon icon={people} />
                     </div>
                   )}
                 </div>
+                {user && group.memberIds.includes(user.uid) && (
+                  <IonBadge className="group-badge">
+                    Du nimmst teil
+                  </IonBadge>
+                )}
                 <IonCardHeader>
                   <IonCardTitle>{group.name}</IonCardTitle>
                   <IonCardSubtitle>

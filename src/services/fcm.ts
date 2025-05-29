@@ -1,22 +1,36 @@
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { getMessaging, getToken, onMessage, Messaging } from "firebase/messaging";
 import { auth, db } from "@/config/firebase";
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { COLLECTIONS } from "@/constants/firebase";
 
-const messaging = getMessaging();
+let messaging: Messaging | null = null;
+
+const ensureMessaging = () => {
+  if (!messaging && typeof window !== "undefined") {
+    try {
+      messaging = getMessaging();
+    } catch (err) {
+      console.warn("getMessaging failed:", err);
+    }
+  }
+  return messaging;
+};
 
 export const requestNotificationPermission = async () => {
   try {
     const currentUser = auth.currentUser;
     if (!currentUser) throw new Error("No user is logged in");
 
-    const token = await getToken(messaging, {
+    const messagingInstance = ensureMessaging();
+    if (!messagingInstance) throw new Error("Messaging not available");
+
+    const token = await getToken(messagingInstance, {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
     });
 
     if (token) {
       await setDoc(
-        doc(db, "users", currentUser.uid),
+        doc(db, COLLECTIONS.USERS, currentUser.uid),
         { fcmToken: token },
         { merge: true }
       );
@@ -27,7 +41,13 @@ export const requestNotificationPermission = async () => {
 };
 
 export const onMessageListener = (callback: (payload: any) => void) => {
-  onMessage(messaging, callback);
+  const messagingInstance = ensureMessaging();
+  if (!messagingInstance) {
+    console.warn("onMessageListener: messaging not available");
+    return () => {};
+  }
+
+  return onMessage(messagingInstance, callback);
 };
 
 export const saveFcmTokenToFirestore = async (token: string) => {

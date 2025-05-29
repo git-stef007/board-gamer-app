@@ -12,3 +12,16 @@ export function generateHashedGradient(input: string): string {
 
   return `linear-gradient(135deg, ${color1}, ${color2})`;
 }
+
+/*
+ * This function generates a color based on a given input string.
+ * It can be used for generating visually disctinctive colors for user names in chat groups etc.
+ * The color is derived from a hash of the input string.
+ */
+
+export function generateHashedColor(input: string): string {
+  const hash = Array.from(input).reduce((acc, char) => char.charCodeAt(0) + ((acc << 5) - acc), 0);
+  const hue = hash % 360;
+  
+  return `hsl(${hue}, 70%, 50%)`;
+}

@@ -8,26 +8,30 @@ export const usePushNotifications = () => {
   const history = useHistory();
 
   useEffect(() => {
-    if (Capacitor.getPlatform() !== "web") {
-      PushNotifications.requestPermissions().then((permission) => {
-        if (permission.receive === "granted") {
-          PushNotifications.register();
-        }
-      });
+    // Skip on web or private mode
+    if (Capacitor.getPlatform() === "web") return;
 
-      PushNotifications.addListener("registration", (token) => {
-        saveFcmTokenToFirestore(token.value);
-      });
+    const initPush = async () => {
+      try {
+        const permission = await PushNotifications.requestPermissions();
+        if (permission.receive !== "granted") return;
 
-      PushNotifications.addListener(
-        "pushNotificationActionPerformed",
-        (notification) => {
+        await PushNotifications.register();
+
+        PushNotifications.addListener("registration", (token) => {
+          if (token.value) saveFcmTokenToFirestore(token.value);
+        });
+
+        PushNotifications.addListener("pushNotificationActionPerformed", (notification) => {
           const groupId = notification.notification.data?.groupId;
-          if (groupId) {
-            history.push(`/chats/${groupId}`);
-          }
-        }
-      );
-    }
+          if (groupId) history.push(`/chats/${groupId}`);
+        });
+
+      } catch (err) {
+        console.warn("Push notifications initialization failed:", err);
+      }
+    };
+
+    initPush();
   }, []);
 };

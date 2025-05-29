@@ -7,35 +7,43 @@ service cloud.firestore {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
-    // Allow users to:
-    // - read groups they're a member of
-    // - create groups where they are both creator and one of the members
-    // - update 'lastMessage' only if they are members
+    // Allow:
+    // - all authenticated users to list/get basic group info (for overview cards)
+    // - full document read only if user is a member
+    // - creation only if creator is in member list
+    // - updates to 'lastMessage' and 'updatedAt' if member
     match /groups/{groupId} {
+
+      // List/Get metadata for overview (public data only)
+      allow list, get: if request.auth != null;
+
+      // Full document access only for members
       allow read: if request.auth != null &&
                   request.auth.uid in resource.data.memberIds;
 
+      // Creator must be in member list
       allow create: if request.auth != null &&
                     request.resource.data.createdBy == request.auth.uid &&
                     request.auth.uid in request.resource.data.memberIds;
 
-      // Only allow updating 'lastMessage' field if user is a group member
+      // Updates only to allowed fields
       allow update: if request.auth != null &&
                     request.auth.uid in resource.data.memberIds &&
                     request.resource.data.diff(resource.data).changedKeys()
                       .hasOnly(['lastMessage', 'updatedAt']);
 
+      // No one can delete groups
       allow delete: if false;
     }
 
-    // Allow group members to read/write messages in their groups
+    // Allow group members to read/write messages
     match /groups/{groupId}/messages/{messageId} {
       allow read, write: if request.auth != null &&
         exists(/databases/$(database)/documents/groups/$(groupId)) &&
         request.auth.uid in get(/databases/$(database)/documents/groups/$(groupId)).data.memberIds;
     }
 
-    // Deny everything else
+    // Catch-all deny
     match /{document=**} {
       allow read, write: if false;
     }

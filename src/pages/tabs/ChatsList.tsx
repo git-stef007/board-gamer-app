@@ -20,6 +20,7 @@ import {
   chatbubble,
   people,
   chatbubblesOutline,
+  chatbubbleEllipsesOutline,
 } from "ionicons/icons";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
@@ -34,6 +35,8 @@ import { getMessaging, getToken } from "firebase/messaging";
 import { useHistory } from "react-router-dom";
 import "./ChatsList.css";
 import { saveFcmTokenToFirestore } from "@/services/fcm";
+import { generateHashedGradient } from "@/utils/colorGenerator";
+import { formatTimestamp } from "@/utils/timeFormatter";
 
 interface Chat {
   id: string;
@@ -45,33 +48,6 @@ interface Chat {
   members?: string[];
   photoURL?: string;
 }
-
-const formatTimestamp = (timestamp: any): string => {
-  if (!timestamp) return "";
-
-  const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffDays === 0) {
-    return date.toLocaleTimeString("de-DE", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  } else if (diffDays === 1) {
-    return "Gestern";
-  } else if (diffDays < 7) {
-    return date
-      .toLocaleDateString("de-DE", { weekday: "short" })
-      .replace(".", "");
-  } else {
-    return date.toLocaleDateString("de-DE", {
-      day: "2-digit",
-      month: "2-digit",
-    });
-  }
-};
 
 const ChatsList: React.FC = () => {
   const { user } = useAuth();
@@ -132,7 +108,7 @@ const ChatsList: React.FC = () => {
             name: data.name || "Unbenannte Gruppe",
             lastMessageContent: data.lastMessage?.content,
             lastMessageSender: data.lastMessage?.senderName,
-            lastMessageTime: data.lastMessage?.timestamp,
+            lastMessageTime: data.lastMessage?.createdAt,
             unreadCount: data.unreadCounts?.[user.uid] || 0,
             members: data.memberIds,
             photoURL: data.imageURL,
@@ -176,18 +152,27 @@ const ChatsList: React.FC = () => {
           </IonToolbar>
         </IonHeader>
 
-        {notificationPermission !== "granted" && (
-          <div className="notification-banner">
-            <IonButton
-              expand="block"
-              onClick={requestNotificationPermission}
-              className="notification-button"
-            >
-              <IonIcon slot="start" icon={notifications} />
-              Benachrichtigungen aktivieren
-            </IonButton>
-          </div>
-        )}
+        {notificationPermission !== "granted" &&
+          (() => {
+            try {
+              // Try initializing messaging to see if it's supported
+              getMessaging();
+              return (
+                <div className="notification-banner">
+                  <IonButton
+                    expand="block"
+                    onClick={requestNotificationPermission}
+                    className="notification-button"
+                  >
+                    <IonIcon slot="start" icon={notifications} />
+                    Benachrichtigungen aktivieren
+                  </IonButton>
+                </div>
+              );
+            } catch {
+              return null;
+            }
+          })()}
 
         {loading ? (
           <div className="loading-container">
@@ -203,26 +188,36 @@ const ChatsList: React.FC = () => {
                 detail={true}
                 className={chat.unreadCount ? "unread-chat" : ""}
               >
-                <IonAvatar slot="start">
+                <div className="chat-icon-container" slot="start">
                   {chat.photoURL ? (
                     <img src={chat.photoURL} alt={chat.name} />
                   ) : (
-                    <IonIcon icon={chatbubble} />
+                    <div
+                      className="default-group-image"
+                      style={{
+                        background: generateHashedGradient(chat.id),
+                      }}
+                    >
+                      <IonIcon icon={chatbubbleEllipsesOutline} />
+                    </div>
                   )}
-                </IonAvatar>
+                </div>
                 <IonLabel>
-                  <h2>{chat.name}</h2>
-                  <p>
+                  <div className="chat-title-row">
+                    <h2>{chat.name}</h2>
+                    <span className="chat-time">
+                      {chat.lastMessageTime
+                        ? formatTimestamp(chat.lastMessageTime)
+                        : ""}
+                    </span>
+                  </div>
+                  <div className="chat-last-message">
                     {chat.lastMessageSender && chat.lastMessageContent
                       ? `${chat.lastMessageSender}: ${chat.lastMessageContent}`
                       : "Noch keine Nachrichten"}
-                  </p>
-                </IonLabel>
-                {chat.lastMessageTime && (
-                  <div slot="end" className="chat-time">
-                    {formatTimestamp(chat.lastMessageTime)}
                   </div>
-                )}
+                </IonLabel>
+
                 {(chat.unreadCount ?? 0) > 0 && (
                   <IonBadge slot="end" color="primary">
                     {chat.unreadCount}
