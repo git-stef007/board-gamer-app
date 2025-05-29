@@ -42,20 +42,20 @@
   position: relative;
   display: flex;
   flex-direction: column;
+  min-width: 80px; /* Ensure bubbles have a minimum width */
 }
 
 .message-row.own .message-bubble {
   background-color: var(--ion-color-primary);
   color: white;
-  align-items: flex-end;
-  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .message-row.other .message-bubble {
   background-color: var(--ion-background-color-step-200);
   color: var(--ion-text-color-step-100);
   align-items: flex-start;
-  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 
 .message-meta {
