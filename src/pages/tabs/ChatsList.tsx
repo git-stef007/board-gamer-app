@@ -37,6 +37,7 @@ import "./ChatsList.css";
 import { saveFcmTokenToFirestore } from "@/services/fcm";
 import { generateHashedGradient } from "@/utils/colorGenerator";
 import { formatTimestamp } from "@/utils/timeFormatter";
+import { GroupDoc } from "@/interfaces/firestore";
 
 interface Chat {
   id: string;
@@ -102,14 +103,14 @@ const ChatsList: React.FC = () => {
       q,
       (snapshot) => {
         const chatList: Chat[] = snapshot.docs.map((doc) => {
-          const data = doc.data();
+          const data = doc.data() as GroupDoc;
           return {
             id: doc.id,
             name: data.name || "Unbenannte Gruppe",
             lastMessageContent: data.lastMessage?.content,
             lastMessageSender: data.lastMessage?.senderName,
             lastMessageTime: data.lastMessage?.createdAt,
-            unreadCount: data.unreadCounts?.[user.uid] || 0,
+            unreadCount: data.unreadCounts?.[user.uid] || 0, // TODO: Unread count needs to be implemented in Firebase
             members: data.memberIds,
             photoURL: data.imageURL,
           };

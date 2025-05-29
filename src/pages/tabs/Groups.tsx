@@ -51,15 +51,10 @@ import {
 } from "firebase/firestore";
 import { generateHashedGradient } from "@/utils/colorGenerator";
 import { formatDate } from "@/utils/timeFormatter";
+import { GroupDoc } from "@/interfaces/firestore";
 
-interface Group {
+interface GroupWithId extends GroupDoc {
   id: string;
-  name: string;
-  memberIds: string[];
-  createdBy: string;
-  createdAt: any;
-  location?: string;
-  imageURL?: string;
 }
 
 const Groups: React.FC = () => {
@@ -68,7 +63,7 @@ const Groups: React.FC = () => {
   const [groupName, setGroupName] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [groups, setGroups] = useState<GroupWithId[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Fetch all groups
@@ -79,10 +74,10 @@ const Groups: React.FC = () => {
         const db = getFirestore();
         const q = query(collection(db, "groups"), orderBy("createdAt", "desc"));
         const snapshot = await getDocs(q);
-        const groupsList: Group[] = snapshot.docs.map((doc) => ({
+        const groupsList: GroupWithId[] = snapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
-        })) as Group[];
+        })) as GroupWithId[];
         setGroups(groupsList);
       } catch (error) {
         console.error("Fehler beim Laden der Gruppen:", error);
@@ -130,13 +125,13 @@ const Groups: React.FC = () => {
       );
 
       const querySnapshot = await getDocs(q);
-      const groupsList: Group[] = [];
+      const groupsList: GroupWithId[] = [];
 
       querySnapshot.forEach((doc) => {
         groupsList.push({
           id: doc.id,
           ...doc.data(),
-        } as Group);
+        } as GroupWithId);
       });
 
       setGroups(groupsList);

@@ -34,3 +34,33 @@ export const formatTimestamp = (timestamp: any): string => {
     });
   }
 };
+
+// Helper function to format timestamp
+export const formatMessageTime = (timestamp: any): string => {
+  if (!timestamp) return "";
+
+  let date: Date;
+
+  // Handle Firestore Timestamp
+  if (timestamp && typeof timestamp.toDate === "function") {
+    date = timestamp.toDate();
+  }
+  // Handle regular Date object
+  else if (timestamp instanceof Date) {
+    date = timestamp;
+  }
+  // Handle other cases (like serialized date strings)
+  else {
+    try {
+      date = new Date(timestamp);
+    } catch (error) {
+      console.error("Invalid timestamp format:", timestamp);
+      return "";
+    }
+  }
+
+  return date.toLocaleTimeString("de-DE", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};

@@ -7,6 +7,7 @@ import {
 import { doc, setDoc } from "firebase/firestore";
 import { auth, db } from "@/config/firebase";
 import { COLLECTIONS } from "@/constants/firebase";
+import { UserDoc } from "@/interfaces/firestore";
 
 export const register = async (
   displayName: string,
@@ -18,12 +19,15 @@ export const register = async (
 
   await updateProfile(user, { displayName });
 
-  await setDoc(doc(db, COLLECTIONS.USERS, user.uid), {
+  // Create user document in Firestore
+  const userData: UserDoc = {
     uid: user.uid,
-    email: user.email,
+    email: user.email || email,
     displayName,
-    createdAt: new Date().toISOString(),
-  });
+    createdAt: new Date(),
+  };
+
+  await setDoc(doc(db, COLLECTIONS.USERS, user.uid), userData);
 
   return user;
 };

@@ -2,6 +2,7 @@ import { getMessaging, getToken, onMessage, Messaging } from "firebase/messaging
 import { auth, db } from "@/config/firebase";
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { COLLECTIONS } from "@/constants/firebase";
+import { UserDoc } from "@/interfaces/firestore";
 
 let messaging: Messaging | null = null;
 
@@ -29,9 +30,10 @@ export const requestNotificationPermission = async () => {
     });
 
     if (token) {
+      const update: Partial<UserDoc> = { fcmToken: token };
       await setDoc(
         doc(db, COLLECTIONS.USERS, currentUser.uid),
-        { fcmToken: token },
+        update,
         { merge: true }
       );
     }
@@ -54,7 +56,6 @@ export const saveFcmTokenToFirestore = async (token: string) => {
   const user = auth.currentUser;
   if (!user) return;
 
-  await updateDoc(doc(db, COLLECTIONS.USERS, user.uid), {
-    fcmToken: token,
-  });
+  const update: Partial<UserDoc> = { fcmToken: token };
+  await updateDoc(doc(db, COLLECTIONS.USERS, user.uid), update);
 };

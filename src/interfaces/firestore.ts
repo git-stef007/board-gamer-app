@@ -21,6 +21,9 @@ export interface GroupDoc {
   updatedAt?: Date;
   location?: string;
   imageURL?: string;
+  unreadCounts?: {
+    [userId: string]: number; // userId -> unread message count
+  };
   lastMessage?: {
     senderId: string;
     senderName: string;

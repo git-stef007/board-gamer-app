@@ -24,11 +24,17 @@ import {
   generateHashedGradient,
 } from "@/utils/colorGenerator";
 import "./ChatView.css";
+import { GroupMessageDoc } from "@/interfaces/firestore";
+import { formatMessageTime } from "@/utils/timeFormatter";
+
+interface MessageWithId extends GroupMessageDoc {
+  id: string;
+}
 
 const ChatView = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const { user } = useAuth();
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<MessageWithId[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [groupName, setGroupName] = useState("Gruppe");
   const bottomRef = useRef<HTMLDivElement | null>(null);
@@ -114,15 +120,7 @@ const ChatView = () => {
                     )}
                     <div className="message-content">{msg.content}</div>
                     <div className="message-time">
-                      {msg.createdAt?.toDate
-                        ? new Date(msg.createdAt.toDate()).toLocaleTimeString(
-                            "de-DE",
-                            {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            }
-                          )
-                        : ""}
+                      {formatMessageTime(msg.createdAt)}
                     </div>
                   </div>
                 </div>

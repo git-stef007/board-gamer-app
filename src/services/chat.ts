@@ -5,17 +5,16 @@ import {
   query,
   orderBy,
   onSnapshot,
-  getFirestore,
-  doc,
-  getDoc,
   updateDoc,
+  doc,
 } from "firebase/firestore";
 import { db } from "@/config/firebase";
 import { COLLECTIONS } from "@/constants/firebase";
+import { GroupDoc, GroupMessageDoc } from "@/interfaces/firestore";
 
 export const subscribeToMessages = (
   groupId: string,
-  callback: (messages: any[]) => void
+  callback: (messages: (GroupMessageDoc & { id: string })[]) => void
 ) => {
   const messagesRef = collection(
     db,
@@ -28,8 +27,8 @@ export const subscribeToMessages = (
   return onSnapshot(q, (snapshot) => {
     const messages = snapshot.docs.map((doc) => ({
       id: doc.id,
-      ...doc.data(),
-    }));
+      ...doc.data()
+    } as GroupMessageDoc & { id: string }));
     callback(messages);
   });
 };
@@ -47,21 +46,28 @@ export const sendMessage = async (
     COLLECTIONS.MESSAGES
   );
 
-  // Add message to messages array
-  await addDoc(messagesRef, {
+  // Message for the subcollection
+  const messageData: GroupMessageDoc = {
     senderId,
     senderName,
     content,
-    createdAt: serverTimestamp(),
-  });
+    createdAt: serverTimestamp() as unknown as Date,
+  };
+
+  // Add message to messages subcollection
+  await addDoc(messagesRef, messageData);
 
   // Update last message in group document (for chats list view)
-  await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), {
+  const lastMessageUpdate: Pick<GroupDoc, 'lastMessage' | 'updatedAt'> = {
     lastMessage: {
       senderId,
       senderName,
       content,
-      createdAt: serverTimestamp(),
+      createdAt: serverTimestamp() as unknown as Date,
     },
-  });
+    updatedAt: serverTimestamp() as unknown as Date
+  };
+
+  // Update the group document
+  await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), lastMessageUpdate);
 };
