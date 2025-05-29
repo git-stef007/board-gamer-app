@@ -15,7 +15,8 @@ export interface UserDoc {
 // ======================
 export interface GroupDoc {
   name: string;
-  memberIds: string[];
+  memberIds: string[]; // userIds of group members
+  description?: string;
   createdBy: string;
   createdAt: Date;
   updatedAt?: Date;

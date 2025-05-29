@@ -45,6 +45,27 @@ export const getGroupById = async (groupId: string): Promise<GroupDoc & { id: st
   }
 };
 
+export const getAllGroups = async (): Promise<(GroupDoc & { id: string })[]> => {
+  try {
+    const q = query(
+      collection(db, "groups"),
+      orderBy("createdAt", "desc")
+    );
+    const snapshot = await getDocs(q);
+    const groups: (GroupDoc & { id: string })[] = [];
+    snapshot.forEach((doc) => {
+      groups.push({
+        id: doc.id,
+        ...doc.data()
+      } as GroupDoc & { id: string });
+    });
+    return groups;
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    return [];
+  }
+};
+
 export const getUserGroups = async (userId: string): Promise<(GroupDoc & { id: string })[]> => {
   try {
     const q = query(

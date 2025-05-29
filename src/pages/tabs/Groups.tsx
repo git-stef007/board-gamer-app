@@ -29,6 +29,8 @@ import {
   IonText,
   IonRouterLink,
   IonItemDivider,
+  IonSegment,
+  IonSegmentButton,
 } from "@ionic/react";
 import {
   add,
@@ -40,7 +42,7 @@ import {
 import "./Groups.css";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
-import { createGroup } from "@/services/groups";
+import { createGroup, getAllGroups, getUserGroups } from "@/services/groups";
 import {
   getFirestore,
   collection,
@@ -65,19 +67,33 @@ const Groups: React.FC = () => {
   const [toastMessage, setToastMessage] = useState("");
   const [groups, setGroups] = useState<GroupWithId[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedSegment, setSelectedSegment] = useState<"all" | "mine">("all");
 
-  // Fetch all groups
+  // Fetch groups based on selected segment
   useEffect(() => {
     const fetchGroups = async () => {
+      if (!user && selectedSegment === "mine") {
+        setGroups([]);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
         const db = getFirestore();
-        const q = query(collection(db, "groups"), orderBy("createdAt", "desc"));
-        const snapshot = await getDocs(q);
-        const groupsList: GroupWithId[] = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as GroupWithId[];
+        let groupsList: GroupWithId[] = [];
+
+        if (selectedSegment === "all") {
+          // Fetch all groups
+          groupsList = await getAllGroups();
+        } else {
+          // Fetch only user's groups
+          if (user) {
+            // Using the service function
+            groupsList = await getUserGroups(user.uid);
+          }
+        }
+
         setGroups(groupsList);
       } catch (error) {
         console.error("Fehler beim Laden der Gruppen:", error);
@@ -89,7 +105,7 @@ const Groups: React.FC = () => {
     };
 
     fetchGroups();
-  }, []);
+  }, [selectedSegment, user]);
 
   const handleCreateGroup = () => {
     setShowModal(true);
@@ -144,6 +160,10 @@ const Groups: React.FC = () => {
     }
   };
 
+  const handleSegmentChange = (e: CustomEvent) => {
+    setSelectedSegment(e.detail.value);
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -160,6 +180,20 @@ const Groups: React.FC = () => {
             <IonTitle size="large">Gruppen</IonTitle>
           </IonToolbar>
         </IonHeader>
+
+        {/* Segment control for filtering groups */}
+        <IonSegment
+          value={selectedSegment}
+          onIonChange={handleSegmentChange}
+          className="groups-segment"
+        >
+          <IonSegmentButton value="all">
+            <IonLabel>Alle</IonLabel>
+          </IonSegmentButton>
+          <IonSegmentButton value="mine">
+            <IonLabel>Meine</IonLabel>
+          </IonSegmentButton>
+        </IonSegment>
 
         {/* Display the list of groups */}
         {loading ? (
@@ -191,9 +225,7 @@ const Groups: React.FC = () => {
                   )}
                 </div>
                 {user && group.memberIds.includes(user.uid) && (
-                  <IonBadge className="group-badge">
-                    Du nimmst teil
-                  </IonBadge>
+                  <IonBadge className="group-badge">Du nimmst teil</IonBadge>
                 )}
                 <IonCardHeader>
                   <IonCardTitle>{group.name}</IonCardTitle>
@@ -257,7 +289,7 @@ const Groups: React.FC = () => {
                 <IonInput
                   value={groupName}
                   onIonChange={(e) => setGroupName(e.detail.value || "")}
-                  placeholder="Geben Sie einen Gruppennamen ein"
+                  placeholder="Gib einen Gruppennamen ein"
                   required
                 />
               </IonItem>
