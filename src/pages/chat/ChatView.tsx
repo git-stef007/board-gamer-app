@@ -31,13 +31,71 @@ interface MessageWithId extends GroupMessageDoc {
   id: string;
 }
 
+// Helper to format dates for the date separator
+const formatDateForSeparator = (timestamp: any): string => {
+  if (!timestamp) return "";
+
+  // Handle different timestamp formats
+  let date: Date;
+  if (timestamp && typeof timestamp.toDate === "function") {
+    date = timestamp.toDate();
+  } else if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    try {
+      date = new Date(timestamp);
+    } catch (error) {
+      console.error("Invalid timestamp format:", timestamp);
+      return "";
+    }
+  }
+
+  // Check if the date is today
+  const today = new Date();
+  const yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  if (date.toDateString() === today.toDateString()) {
+    return "Heute";
+  } else if (date.toDateString() === yesterday.toDateString()) {
+    return "Gestern";
+  } else {
+    // Format as DD.MM.YYYY for German locale
+    return date.toLocaleDateString("de-DE", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  }
+};
+
+// Helper to get just the date part as a string for comparison
+const getDateString = (timestamp: any): string => {
+  if (!timestamp) return "";
+
+  let date: Date;
+  if (timestamp && typeof timestamp.toDate === "function") {
+    date = timestamp.toDate();
+  } else if (timestamp instanceof Date) {
+    date = timestamp;
+  } else {
+    try {
+      date = new Date(timestamp);
+    } catch (error) {
+      return "";
+    }
+  }
+
+  return date.toDateString();
+};
+
 const ChatView = () => {
   const { groupId } = useParams<{ groupId: string }>();
   const { user } = useAuth();
   const [messages, setMessages] = useState<MessageWithId[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [groupName, setGroupName] = useState("Gruppe");
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const contentRef = useRef<HTMLIonContentElement | null>(null);
 
   useEffect(() => {
     const unsubscribe = subscribeToMessages(groupId, setMessages);
@@ -56,7 +114,10 @@ const ChatView = () => {
   }, [groupId]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Use a small timeout to ensure the DOM has updated
+    setTimeout(() => {
+      contentRef.current?.scrollToBottom(300);
+    }, 100);
   }, [messages]);
 
   const handleSend = async () => {
@@ -77,6 +138,58 @@ const ChatView = () => {
     }
   };
 
+  // Group messages by date for date separators
+  const renderMessages = () => {
+    let currentDate = "";
+
+    return messages.map((msg, index) => {
+      const isOwn = user?.uid === msg.senderId;
+      const messageDate = getDateString(msg.createdAt);
+      const showDateSeparator = messageDate !== currentDate;
+
+      if (showDateSeparator) {
+        currentDate = messageDate;
+      }
+
+      return (
+        <div key={msg.id}>
+          {showDateSeparator && (
+            <div className="date-separator">
+              <div className="date-pill">
+                {formatDateForSeparator(msg.createdAt)}
+              </div>
+            </div>
+          )}
+
+          <div className={`message-row ${isOwn ? "own" : "other"}`}>
+            {!isOwn && (
+              <div
+                className="message-avatar"
+                style={{
+                  background: generateHashedGradient(msg.senderId),
+                }}
+              />
+            )}
+            <div className="message-bubble">
+              {!isOwn && (
+                <div
+                  className="sender-name"
+                  style={{ color: generateHashedColor(msg.senderId) }}
+                >
+                  {msg.senderName}
+                </div>
+              )}
+              <div className="message-content">{msg.content}</div>
+              <div className="message-time">
+                {formatMessageTime(msg.createdAt)}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    });
+  };
+
   return (
     <IonPage>
       <IonHeader>
@@ -90,55 +203,19 @@ const ChatView = () => {
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
-        <IonContent className="chat-view-content">
-          <div className="chat-messages">
-            {messages.map((msg) => {
-              const isOwn = user?.uid === msg.senderId;
-              return (
-                <div
-                  key={msg.id}
-                  className={`message-bubble ${isOwn ? "own" : "other"}`}
-                >
-                  {!isOwn && (
-                    <div
-                      className="message-avatar"
-                      style={{
-                        background: generateHashedGradient(msg.senderId),
-                      }}
-                    />
-                  )}
-
-                  <div className="message-meta">
-                    {!isOwn && (
-                      <div
-                        className="sender-name"
-                        style={{ color: generateHashedColor(msg.senderId) }}
-                      >
-                        {msg.senderName}
-                      </div>
-                    )}
-                    <div className="message-content">{msg.content}</div>
-                    <div className="message-time">
-                      {formatMessageTime(msg.createdAt)}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-            <div ref={bottomRef} />
-          </div>
-        </IonContent>
+      <IonContent ref={contentRef} className="chat-view-content">
+        <div className="chat-messages">{renderMessages()}</div>
       </IonContent>
       <IonFooter className="chat-input-footer">
         <div className="chat-input-bar">
-          <IonInput
+          <textarea
             placeholder="Nachricht schreiben..."
             value={newMessage}
-            onIonInput={(e) => setNewMessage(e.detail.value!)}
+            onChange={(e) => setNewMessage(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="chat-input"
+            className="chat-textarea"
           />
+
           <IonButton
             onClick={handleSend}
             shape="round"
