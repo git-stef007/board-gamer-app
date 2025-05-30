@@ -35,3 +35,7 @@ serviceAccountKey.json   # never commit service keys!
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Firebase config files (native only)
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist

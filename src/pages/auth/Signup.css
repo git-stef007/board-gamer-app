@@ -1,16 +1,39 @@
 .signup-container {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
+  align-items: center;
   height: 100%;
+  max-width: 400px;
+  margin: 0 auto;
 }
 
 .signup-container ion-card {
   width: 100%;
-  max-width: 500px;
-  margin: 0 auto;
+  max-width: 400px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+ion-card-title {
+  margin-bottom: 16px;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+ion-button {
+  margin-top: 24px;
+}
+
+.login-footer {
+  margin-top: 20px;
+  text-align: center;
 }
 
 .login-footer p {
   margin-top: 0.75rem;
+}
+
+.login-footer a {
+  font-weight: 600;
+  text-decoration: none;
 }

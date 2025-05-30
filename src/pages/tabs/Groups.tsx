@@ -168,33 +168,29 @@ const Groups: React.FC = () => {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+          {/* First toolbar with title and profile dropdown */}
           <IonTitle>Gruppen</IonTitle>
           <IonButtons slot="end">
             <UserProfileDropdown user={user} />
           </IonButtons>
         </IonToolbar>
+        <IonToolbar>
+          {/* Second toolbar with segment buttons */}
+          <IonSegment
+            value={selectedSegment}
+            onIonChange={handleSegmentChange}
+            className="toolbar-segment"
+          >
+            <IonSegmentButton value="all">
+              <IonLabel>Alle</IonLabel>
+            </IonSegmentButton>
+            <IonSegmentButton value="mine">
+              <IonLabel>Meine</IonLabel>
+            </IonSegmentButton>
+          </IonSegment>
+        </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        <IonHeader collapse="condense">
-          <IonToolbar>
-            <IonTitle size="large">Gruppen</IonTitle>
-          </IonToolbar>
-        </IonHeader>
-
-        {/* Segment control for filtering groups */}
-        <IonSegment
-          value={selectedSegment}
-          onIonChange={handleSegmentChange}
-          className="groups-segment"
-        >
-          <IonSegmentButton value="all">
-            <IonLabel>Alle</IonLabel>
-          </IonSegmentButton>
-          <IonSegmentButton value="mine">
-            <IonLabel>Meine</IonLabel>
-          </IonSegmentButton>
-        </IonSegment>
-
         {/* Display the list of groups */}
         {loading ? (
           <div className="ion-padding ion-text-center">

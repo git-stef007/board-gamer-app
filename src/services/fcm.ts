@@ -1,8 +1,9 @@
 import { getMessaging, getToken, onMessage, Messaging } from "firebase/messaging";
-import { auth, db } from "@/config/firebase";
+import { db } from "@/config/firebase";
 import { doc, setDoc, updateDoc } from "firebase/firestore";
 import { COLLECTIONS } from "@/constants/firebase";
 import { UserDoc } from "@/interfaces/firestore";
+import { getCurrentUser } from "@/services/auth";
 
 let messaging: Messaging | null = null;
 
@@ -17,10 +18,10 @@ const ensureMessaging = () => {
   return messaging;
 };
 
-export const requestNotificationPermission = async () => {
+export const requestAndSaveFcmToken = async (): Promise<string | null> => {
   try {
-    const currentUser = auth.currentUser;
-    if (!currentUser) throw new Error("No user is logged in");
+    const permission = await Notification.requestPermission();
+    if (permission !== "granted") return null;
 
     const messagingInstance = ensureMessaging();
     if (!messagingInstance) throw new Error("Messaging not available");
@@ -29,16 +30,18 @@ export const requestNotificationPermission = async () => {
       vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
     });
 
-    if (token) {
-      const update: Partial<UserDoc> = { fcmToken: token };
-      await setDoc(
-        doc(db, COLLECTIONS.USERS, currentUser.uid),
-        update,
-        { merge: true }
-      );
-    }
+    if (!token) return null;
+
+    const user = await getCurrentUser();
+    if (!user) return token;
+
+    const update: Partial<UserDoc> = { fcmToken: token };
+    await setDoc(doc(db, COLLECTIONS.USERS, user.uid), update, { merge: true });
+
+    return token;
   } catch (err) {
-    console.error("Failed to get FCM token:", err);
+    console.error("Failed to get/save FCM token:", err);
+    return null;
   }
 };
 
@@ -53,7 +56,7 @@ export const onMessageListener = (callback: (payload: any) => void) => {
 };
 
 export const saveFcmTokenToFirestore = async (token: string) => {
-  const user = auth.currentUser;
+  const user = await getCurrentUser();
   if (!user) return;
 
   const update: Partial<UserDoc> = { fcmToken: token };

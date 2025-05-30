@@ -25,7 +25,6 @@ import Login from "./pages/auth/Login";
 import Signup from "./pages/auth/Signup";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
-import { usePushNotifications } from "./hooks/usePushNotifications";
 import ChatView from "./pages/chat/ChatView";
 
 import "@ionic/react/css/core.css";
@@ -42,12 +41,11 @@ import "@ionic/react/css/palettes/dark.system.css";
 
 import "./theme/variables.css";
 import "./App.css";
+import { Capacitor } from "@capacitor/core";
 
 setupIonicReact();
 
 const App: React.FC = () => {
-  usePushNotifications();
-
   return (
     <IonApp>
       <AuthProvider>

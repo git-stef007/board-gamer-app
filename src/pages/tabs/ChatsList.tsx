@@ -34,7 +34,7 @@ import {
 import { getMessaging, getToken } from "firebase/messaging";
 import { useHistory } from "react-router-dom";
 import "./ChatsList.css";
-import { saveFcmTokenToFirestore } from "@/services/fcm";
+import { requestAndSaveFcmToken } from "@/services/fcm";
 import { generateHashedGradient } from "@/utils/colorGenerator";
 import { formatTimestamp } from "@/utils/timeFormatter";
 import { GroupDoc } from "@/interfaces/firestore";
@@ -55,35 +55,24 @@ const ChatsList: React.FC = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [notificationPermission, setNotificationPermission] =
-    useState<NotificationPermission | null>(null);
+    useState<NotificationPermission>(() => Notification.permission);
   const history = useHistory();
 
   useEffect(() => {
-    setNotificationPermission(Notification.permission);
-  }, []);
+    if (notificationPermission === "granted") {
+      setNotificationPermission("granted"); // ensures re-render hides the banner
+    }
+  }, [notificationPermission]);  
 
   const requestNotificationPermission = async () => {
-    try {
-      if (!("Notification" in window)) return;
-
-      const permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-
-      if (permission === "granted") {
-        const messaging = getMessaging();
-        const token = await getToken(messaging, {
-          vapidKey: import.meta.env.VITE_FIREBASE_VAPID_KEY,
-        });
-
-        if (token) {
-          console.log("FCM Token:", token);
-          saveFcmTokenToFirestore(token);
-        }
-      }
-    } catch (err) {
-      console.error("Notification request error:", err);
+    const permission = await Notification.requestPermission();
+    setNotificationPermission(permission);
+  
+    if (permission === "granted") {
+      const token = await requestAndSaveFcmToken();
+      if (token) console.log("FCM Token:", token);
     }
-  };
+  };  
 
   useEffect(() => {
     if (!user) {
