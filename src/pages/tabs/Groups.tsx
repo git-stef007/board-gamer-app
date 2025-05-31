@@ -31,6 +31,7 @@ import {
   IonItemDivider,
   IonSegment,
   IonSegmentButton,
+  IonSkeletonText,
 } from "@ionic/react";
 import {
   add,
@@ -173,9 +174,33 @@ const Groups: React.FC = () => {
         <div className="center-horizontally">
           {/* Display the list of groups */}
           {loading ? (
-            <div className="ion-padding ion-text-center">
-              <IonSpinner name="crescent" />
-              <p>Gruppen werden geladen...</p>
+            <div className="group-list">
+              {[...Array(4)].map((_, index) => (
+                <IonCard key={index}>
+                  <div className="group-card-header">
+                    <div
+                      className="default-group-image"
+                      style={{ background: "#333" }}
+                    >
+                      <IonSkeletonText
+                        animated
+                        style={{ width: "100%", height: "100%" }}
+                      />
+                    </div>
+                  </div>
+                  <IonCardHeader>
+                    <IonCardTitle>
+                      <IonSkeletonText animated style={{ width: "60%" }} />
+                    </IonCardTitle>
+                    <IonCardSubtitle>
+                      <IonSkeletonText animated style={{ width: "40%" }} />
+                    </IonCardSubtitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <IonSkeletonText animated style={{ width: "80%" }} />
+                  </IonCardContent>
+                </IonCard>
+              ))}
             </div>
           ) : groups.length > 0 ? (
             <div className="group-list">

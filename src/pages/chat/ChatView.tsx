@@ -15,7 +15,11 @@ import {
   IonBackButton,
   IonFooter,
 } from "@ionic/react";
-import { sendMessage, subscribeToMessages, removeMessageListener } from "@/services/chat";
+import {
+  sendMessage,
+  subscribeToMessages,
+  removeMessageListener,
+} from "@/services/chat";
 import { getGroupById } from "@/services/groups";
 import { useAuth } from "@/hooks/useAuth";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
@@ -25,7 +29,11 @@ import {
 } from "@/utils/colorGenerator";
 import "./ChatView.css";
 import { GroupMessageDoc } from "@/interfaces/firestore";
-import { firestoreTimestampToDate, formatMessageTime } from "@/utils/timeFormatter";
+import {
+  firestoreTimestampToDate,
+  formatMessageTime,
+  normalizeToTimestamp,
+} from "@/utils/timeFormatter";
 
 interface MessageWithId extends GroupMessageDoc {
   id: string;
@@ -34,6 +42,8 @@ interface MessageWithId extends GroupMessageDoc {
 // Helper to format dates for the date separator
 const formatDateForSeparator = (timestamp: any): string => {
   if (!timestamp) return "";
+
+  timestamp = normalizeToTimestamp(timestamp);
 
   // Handle different timestamp formats
   let date: Date;
@@ -72,6 +82,8 @@ const formatDateForSeparator = (timestamp: any): string => {
 // Helper to get just the date part as a string for comparison
 const getDateString = (timestamp: any): string => {
   if (!timestamp) return "";
+
+  timestamp = normalizeToTimestamp(timestamp);
 
   let date: Date;
   if (timestamp && typeof timestamp.toDate === "function") {
@@ -157,7 +169,15 @@ const ChatView = () => {
   const renderMessages = () => {
     let currentDate = "";
 
-    return messages.map((msg, index) => {
+    const sortedMessages = [...messages].sort((a, b) => {
+      const aTs =
+        (a.createdAt?.seconds ?? 0) * 1e9 + (a.createdAt?.nanoseconds ?? 0);
+      const bTs =
+        (b.createdAt?.seconds ?? 0) * 1e9 + (b.createdAt?.nanoseconds ?? 0);
+      return aTs - bTs;
+    });
+
+    return sortedMessages.map((msg, index) => {
       const isOwn = user?.uid === msg.senderId;
       const messageDate = getDateString(msg.createdAt.seconds);
       const showDateSeparator = messageDate !== currentDate;

@@ -14,6 +14,7 @@ import {
   IonIcon,
   IonBadge,
   IonSpinner,
+  IonSkeletonText,
 } from "@ionic/react";
 import {
   notifications,
@@ -87,7 +88,7 @@ const ChatsList: React.FC = () => {
           name: group.name || "Unbenannte Gruppe",
           lastMessageContent: group.lastMessage?.content,
           lastMessageSender: group.lastMessage?.senderName,
-          lastMessageTime: group.lastMessage?.createdAt.seconds,
+          lastMessageTime: group.lastMessage?.createdAt,
           unreadCount: group.unreadCounts?.[user.uid] || 0,
           members: group.memberIds,
           photoURL: group.imageURL,
@@ -95,8 +96,8 @@ const ChatsList: React.FC = () => {
 
         // Sort by last message time
         chatList.sort((a, b) => {
-          const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
-          const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
+          const aTime = a.lastMessageTime?.toDate?.() ?? new Date(0);
+          const bTime = b.lastMessageTime?.toDate?.() ?? new Date(0);
           return bTime.getTime() - aTime.getTime();
         });
 
@@ -152,10 +153,30 @@ const ChatsList: React.FC = () => {
         )}
 
         {loading ? (
-          <div className="loading-container">
-            <IonSpinner name="crescent" />
-            <p>Lädt...</p>
-          </div>
+          <IonList>
+            {[...Array(5)].map((_, index) => (
+              <IonItem key={index}>
+                <IonAvatar slot="start">
+                  <IonSkeletonText
+                    animated={true}
+                    style={{
+                      width: "40px",
+                      height: "40px",
+                      borderRadius: "50%",
+                    }}
+                  />
+                </IonAvatar>
+                <IonLabel>
+                  <h2>
+                    <IonSkeletonText animated={true} style={{ width: "80%" }} />
+                  </h2>
+                  <p>
+                    <IonSkeletonText animated={true} style={{ width: "60%" }} />
+                  </p>
+                </IonLabel>
+              </IonItem>
+            ))}
+          </IonList>
         ) : chats.length > 0 ? (
           <IonList>
             {chats.map((chat) => (
@@ -184,7 +205,7 @@ const ChatsList: React.FC = () => {
                     <h2>{chat.name}</h2>
                     <span className="chat-time">
                       {chat.lastMessageTime
-                        ? formatTimestamp(chat.lastMessageTime)
+                        ? formatTimestamp(chat.lastMessageTime.seconds)
                         : ""}
                     </span>
                   </div>
