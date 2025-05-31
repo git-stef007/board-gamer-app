@@ -14,6 +14,7 @@ import {
   IonButtons,
   IonBackButton,
   IonFooter,
+  IonIcon,
 } from "@ionic/react";
 import {
   sendMessage,
@@ -34,6 +35,7 @@ import {
   formatMessageTime,
   normalizeToTimestamp,
 } from "@/utils/timeFormatter";
+import { send } from "ionicons/icons";
 
 interface MessageWithId extends GroupMessageDoc {
   id: string;
@@ -230,7 +232,7 @@ const ChatView = () => {
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            <IonBackButton defaultHref="/chats" />
+            <IonBackButton defaultHref="/chats" text={"Zurück"} />
           </IonButtons>
           <IonTitle>{groupName}</IonTitle>
           <IonButtons slot="end">
@@ -257,7 +259,7 @@ const ChatView = () => {
             color="primary"
             className="send-button"
           >
-            Senden
+            <IonIcon slot="icon-only" icon={send} />
           </IonButton>
         </div>
       </IonFooter>
