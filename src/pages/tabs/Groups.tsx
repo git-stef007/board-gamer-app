@@ -46,6 +46,7 @@ import { createGroup, getAllGroups, getUserGroups } from "@/services/groups";
 import { generateHashedGradient } from "@/utils/colorGenerator";
 import { formatDate } from "@/utils/timeFormatter";
 import { GroupDoc } from "@/interfaces/firestore";
+import { firestoreTimestampToDate } from "@/utils/timeFormatter";
 
 interface GroupWithId extends GroupDoc {
   id: string;
@@ -105,7 +106,7 @@ const Groups: React.FC = () => {
     if (!user) return;
 
     if (!groupName.trim()) {
-      setToastMessage("Please enter a group name");
+      setToastMessage("Bitte gib einen Gruppennamen ein");
       setShowToast(true);
       return;
     }
@@ -212,7 +213,13 @@ const Groups: React.FC = () => {
                   <IonCardContent>
                     <p className="group-created-at">
                       <IonIcon icon={calendar} /> Erstellt am{" "}
-                      {formatDate(group.createdAt)}
+                      {firestoreTimestampToDate(
+                        group.createdAt
+                      ).toLocaleDateString("de-DE", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
                     </p>
                   </IonCardContent>
                 </IonCard>
@@ -250,7 +257,7 @@ const Groups: React.FC = () => {
                   <IonLabel position="stacked">Gruppenname*</IonLabel>
                   <IonInput
                     value={groupName}
-                    onIonChange={(e) => setGroupName(e.detail.value || "")}
+                    onIonInput={(e) => setGroupName(e.detail.value || "")}
                     placeholder="Gib einen Gruppennamen ein"
                     required
                   />
@@ -273,7 +280,7 @@ const Groups: React.FC = () => {
             position="bottom"
           />
         </div>
-        
+
         {/* FAB Button for creating new groups */}
         {user && (
           <IonFab

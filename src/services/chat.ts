@@ -1,6 +1,7 @@
 import { FirebaseFirestore } from "@capacitor-firebase/firestore";
 import { COLLECTIONS } from "@/constants/firebase";
 import { GroupDoc, GroupMessageDoc } from "@/interfaces/firestore";
+import { dateToFirestoreTimestamp } from "@/utils/timeFormatter";
 
 export const subscribeToMessages = async (
   groupId: string,
@@ -48,7 +49,7 @@ export const sendMessage = async (
     senderId,
     senderName,
     content,
-    createdAt: { __type__: 'timestamp' }, // Server timestamp
+    createdAt: dateToFirestoreTimestamp(new Date()),
   };
 
   // Add message to messages subcollection
@@ -63,9 +64,9 @@ export const sendMessage = async (
       senderId,
       senderName,
       content,
-      createdAt: { __type__: 'timestamp' } as unknown as Date,
+      createdAt: dateToFirestoreTimestamp(new Date()),
     },
-    updatedAt: { __type__: 'timestamp' } as unknown as Date
+    updatedAt: dateToFirestoreTimestamp(new Date())
   };
 
   // Update the group document

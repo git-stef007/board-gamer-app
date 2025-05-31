@@ -1,4 +1,12 @@
 // ======================
+// Firestore Timestamp Format
+// ======================
+export interface FirestoreTimestamp {
+  seconds: number;
+  nanoseconds: number;
+}
+
+// ======================
 // User Document (/users/{userId})
 // ======================
 export interface UserDoc {
@@ -7,7 +15,7 @@ export interface UserDoc {
   email: string;
   photoURL?: string;
   fcmToken?: string;
-  createdAt: Date;
+  createdAt: FirestoreTimestamp;
 }
 
 // ======================
@@ -18,8 +26,8 @@ export interface GroupDoc {
   memberIds: string[]; // userIds of group members
   description?: string;
   createdBy: string;
-  createdAt: Date;
-  updatedAt?: Date;
+  createdAt: FirestoreTimestamp;
+  updatedAt?: FirestoreTimestamp;
   location?: string;
   imageURL?: string;
   unreadCounts?: {
@@ -29,7 +37,7 @@ export interface GroupDoc {
     senderId: string;
     senderName: string;
     content: string;
-    createdAt: Date;
+    createdAt: FirestoreTimestamp;
   };
 }
 
@@ -40,7 +48,7 @@ export interface GroupMessageDoc {
   senderId: string;
   senderName: string;
   content: string;
-  createdAt: Date;
+  createdAt: FirestoreTimestamp;
 }
 
 // ======================
@@ -49,7 +57,7 @@ export interface GroupMessageDoc {
 export interface GroupEventDoc {
   name: string;
   description?: string;
-  createdAt: Date;
+  createdAt: FirestoreTimestamp;
   datetime: Date;
   location?: string;
   host: string; // userId of host
@@ -66,7 +74,7 @@ export interface GroupEventDoc {
 export interface GameSuggestion {
   name: string;
   createdBy: string; // userId
-  createdAt: Date;
+  createdAt: FirestoreTimestamp;
   description?: string;
   voterIds: string[]; // userIds of voters
 }

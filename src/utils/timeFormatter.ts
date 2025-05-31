@@ -1,3 +1,5 @@
+import { FirestoreTimestamp } from "@/interfaces/firestore";
+
 export const formatDate = (timestamp: any) => {
   if (!timestamp) return "";
   const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
@@ -63,4 +65,26 @@ export const formatMessageTime = (timestamp: any): string => {
     hour: "2-digit",
     minute: "2-digit",
   });
+};
+
+/**
+ * Converts a JS Date to a Firestore-compatible object.
+ */
+export const dateToFirestoreTimestamp = (date: Date = new Date()) => {
+  const ms = date.getTime();
+  return {
+    seconds: Math.floor(ms / 1000),
+    nanoseconds: (ms % 1000) * 1_000_000,
+  } as FirestoreTimestamp;
+};
+
+/**
+ * Converts a Firestore timestamp object to a JS Date.
+ * Supports both raw { seconds, nanoseconds } and Firestore Timestamps.
+ */
+export const firestoreTimestampToDate = (ts: any): Date => {
+  if (!ts) return new Date(0);
+  if (typeof ts.toDate === "function") return ts.toDate(); // Firestore Timestamp
+  if (typeof ts.seconds === "number") return new Date(ts.seconds * 1000); // Native-safe
+  return new Date(ts); // Fallback for ISO strings or numbers
 };

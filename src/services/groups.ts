@@ -1,6 +1,7 @@
 import { FirebaseFirestore } from "@capacitor-firebase/firestore";
 import { COLLECTIONS } from "@/constants/firebase";
 import { GroupDoc } from "@/interfaces/firestore";
+import { dateToFirestoreTimestamp } from "@/utils/timeFormatter";
 
 /**
  * Creates a new game group with member rotation support.
@@ -17,21 +18,27 @@ export const createGroup = async (
     throw new Error("Missing required group fields");
   }
 
-  const group: GroupDoc = {
-    name: groupName,
-    memberIds,
-    createdBy,
-    createdAt: { __type__: 'timestamp' } as unknown as Date,
-  };
+  try {
+    const group: GroupDoc = {
+      name: groupName,
+      memberIds,
+      createdBy,
+      createdAt: dateToFirestoreTimestamp(new Date()),
+    };
 
-  const docRef = await FirebaseFirestore.addDocument({
-    reference: COLLECTIONS.GROUPS,
-    data: group
-  });
-  
-  // Extract document ID from the reference path
-  const pathParts = docRef.reference.path.split('/');
-  return pathParts[pathParts.length - 1];
+    const docRef = await FirebaseFirestore.addDocument({
+      reference: COLLECTIONS.GROUPS,
+      data: group
+    });
+
+    // Extract document ID from the reference path
+    const pathParts = docRef.reference.path.split('/');
+    return pathParts[pathParts.length - 1];
+    
+  } catch (error) {
+    console.error("Error creating group:", error);
+    throw new Error("Failed to create group");
+  }
 };
 
 export const getGroupById = async (groupId: string): Promise<GroupDoc & { id: string } | null> => {

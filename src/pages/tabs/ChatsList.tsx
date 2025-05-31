@@ -83,7 +83,7 @@ const ChatsList: React.FC = () => {
           name: group.name || "Unbenannte Gruppe",
           lastMessageContent: group.lastMessage?.content,
           lastMessageSender: group.lastMessage?.senderName,
-          lastMessageTime: group.lastMessage?.createdAt,
+          lastMessageTime: group.lastMessage?.createdAt.seconds,
           unreadCount: group.unreadCounts?.[user.uid] || 0,
           members: group.memberIds,
           photoURL: group.imageURL,

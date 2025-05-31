@@ -2,6 +2,7 @@ import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
 import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import { COLLECTIONS } from "@/constants/firebase";
 import { UserDoc } from "@/interfaces/firestore";
+import { dateToFirestoreTimestamp } from "@/utils/timeFormatter";
 
 export const register = async (
   displayName: string,
@@ -28,7 +29,7 @@ export const register = async (
       uid: user.uid,
       email: user.email ?? email,
       displayName,
-      createdAt: new Date(),
+      createdAt: dateToFirestoreTimestamp(new Date()),
     };
 
     // Use Capacitor Firestore plugin to create user document

@@ -25,7 +25,7 @@ import {
 } from "@/utils/colorGenerator";
 import "./ChatView.css";
 import { GroupMessageDoc } from "@/interfaces/firestore";
-import { formatMessageTime } from "@/utils/timeFormatter";
+import { firestoreTimestampToDate, formatMessageTime } from "@/utils/timeFormatter";
 
 interface MessageWithId extends GroupMessageDoc {
   id: string;
@@ -159,7 +159,7 @@ const ChatView = () => {
 
     return messages.map((msg, index) => {
       const isOwn = user?.uid === msg.senderId;
-      const messageDate = getDateString(msg.createdAt);
+      const messageDate = getDateString(msg.createdAt.seconds);
       const showDateSeparator = messageDate !== currentDate;
 
       if (showDateSeparator) {
@@ -171,7 +171,7 @@ const ChatView = () => {
           {showDateSeparator && (
             <div className="date-separator">
               <div className="date-pill">
-                {formatDateForSeparator(msg.createdAt)}
+                {formatDateForSeparator(msg.createdAt.seconds)}
               </div>
             </div>
           )}
@@ -196,7 +196,7 @@ const ChatView = () => {
               )}
               <div className="message-content">{msg.content}</div>
               <div className="message-time">
-                {formatMessageTime(msg.createdAt)}
+                {formatMessageTime(msg.createdAt.seconds)}
               </div>
             </div>
           </div>
