@@ -49,12 +49,13 @@ const ChatsList: React.FC = () => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
   const [pushPermissionGranted, setPushPermissionGranted] = useState(false);
+  const [permissionChecked, setPermissionChecked] = useState(false);
   const history = useHistory();
 
   useEffect(() => {
-    // Check permission status on mount
     FirebaseMessaging.checkPermissions().then(({ receive }) => {
       setPushPermissionGranted(receive === "granted");
+      setPermissionChecked(true);
     });
   }, []);
 
@@ -79,7 +80,6 @@ const ChatsList: React.FC = () => {
     const fetchChats = async () => {
       setLoading(true);
       try {
-        // Use the updated getUserGroups service instead of direct Firestore calls
         const groups = await getUserGroups(user.uid);
 
         const chatList: Chat[] = groups.map((group) => ({
@@ -138,7 +138,7 @@ const ChatsList: React.FC = () => {
           </IonToolbar>
         </IonHeader>
 
-        {!pushPermissionGranted && (
+        {permissionChecked && !pushPermissionGranted && (
           <div className="notification-banner">
             <IonButton
               expand="block"
