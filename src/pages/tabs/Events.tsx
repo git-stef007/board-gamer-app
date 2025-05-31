@@ -61,25 +61,32 @@ const Events: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen className="ion-padding">
-        <IonCard>
-          <IonCardHeader>
-            <IonCardSubtitle>Nächster Termin</IonCardSubtitle>
-            <IonCardTitle>
-              {nextEvent.date} – {nextEvent.time}
-            </IonCardTitle>
-          </IonCardHeader>
-          <div className="ion-padding">
-            <p>
-              <strong>Gastgeber:</strong> {nextEvent.host}
-            </p>
-            <p>
-              <strong>Adresse:</strong> {nextEvent.location}
-            </p>
-            <IonButton expand="block" onClick={() => setShowActionSheet(true)}>
-              Ich komme zu spät
-            </IonButton>
-          </div>
-        </IonCard>
+        <div
+          className="center-horizontally"
+        >
+          <IonCard>
+            <IonCardHeader>
+              <IonCardSubtitle>Nächster Termin</IonCardSubtitle>
+              <IonCardTitle>
+                {nextEvent.date} – {nextEvent.time}
+              </IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <p>
+                <strong>Gastgeber:</strong> {nextEvent.host}
+              </p>
+              <p>
+                <strong>Adresse:</strong> {nextEvent.location}
+              </p>
+              <IonButton
+                expand="block"
+                onClick={() => setShowActionSheet(true)}
+              >
+                Ich komme zu spät
+              </IonButton>
+            </IonCardContent>
+          </IonCard>
+        </div>
 
         <IonActionSheet
           isOpen={showActionSheet}

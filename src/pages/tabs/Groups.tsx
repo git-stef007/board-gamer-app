@@ -123,10 +123,11 @@ const Groups: React.FC = () => {
       setShowToast(true);
 
       // Refresh the groups list using the updated service
-      const refreshedGroups = selectedSegment === "all" 
-        ? await getAllGroups() 
-        : await getUserGroups(user.uid);
-      
+      const refreshedGroups =
+        selectedSegment === "all"
+          ? await getAllGroups()
+          : await getUserGroups(user.uid);
+
       setGroups(refreshedGroups);
     } catch (error) {
       console.error("Error creating group:", error);
@@ -168,67 +169,111 @@ const Groups: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
-        {/* Display the list of groups */}
-        {loading ? (
-          <div className="ion-padding ion-text-center">
-            <IonSpinner name="crescent" />
-            <p>Gruppen werden geladen...</p>
-          </div>
-        ) : groups.length > 0 ? (
-          <div className="ion-padding">
-            {groups.map((group) => (
-              <IonCard key={group.id} routerLink={`/groups/${group.id}`}>
-                <div className="group-card-header">
-                  {group.imageURL ? (
-                    <img
-                      src={group.imageURL}
-                      alt={group.name}
-                      className="group-image"
-                    />
-                  ) : (
-                    /* Default group image with hashed gradient based on group name, createdBy and createdAt */
-                    <div
-                      className="default-group-image"
-                      style={{
-                        background: generateHashedGradient(group.id),
-                      }}
-                    >
-                      <IonIcon icon={people} />
-                    </div>
+        <div className="center-horizontally">
+          {/* Display the list of groups */}
+          {loading ? (
+            <div className="ion-padding ion-text-center">
+              <IonSpinner name="crescent" />
+              <p>Gruppen werden geladen...</p>
+            </div>
+          ) : groups.length > 0 ? (
+            <div className="group-list">
+              {groups.map((group) => (
+                <IonCard key={group.id} routerLink={`/groups/${group.id}`}>
+                  <div className="group-card-header">
+                    {group.imageURL ? (
+                      <img
+                        src={group.imageURL}
+                        alt={group.name}
+                        className="group-image"
+                      />
+                    ) : (
+                      /* Default group image with hashed gradient based on group name, createdBy and createdAt */
+                      <div
+                        className="default-group-image"
+                        style={{
+                          background: generateHashedGradient(group.id),
+                        }}
+                      >
+                        <IonIcon icon={people} />
+                      </div>
+                    )}
+                  </div>
+                  {user && group.memberIds.includes(user.uid) && (
+                    <IonBadge className="group-badge">Du nimmst teil</IonBadge>
                   )}
-                </div>
-                {user && group.memberIds.includes(user.uid) && (
-                  <IonBadge className="group-badge">Du nimmst teil</IonBadge>
-                )}
-                <IonCardHeader>
-                  <IonCardTitle>{group.name}</IonCardTitle>
-                  <IonCardSubtitle>
-                    <IonIcon icon={personOutline} /> Mitglieder:{" "}
-                    {group.memberIds.length}
-                  </IonCardSubtitle>
-                </IonCardHeader>
-                <IonCardContent>
-                  <p className="group-created-at">
-                    <IonIcon icon={calendar} /> Erstellt am{" "}
-                    {formatDate(group.createdAt)}
-                  </p>
-                </IonCardContent>
-              </IonCard>
-            ))}
-          </div>
-        ) : (
-          <div className="empty-groups-container ion-padding ion-text-center">
-            <IonIcon icon={people} size="large" />
-            <h2>Noch keine Gruppen</h2>
-            <p>
-              Erstelle eine neue Gruppe oder tritt einer bestehenden Gruppe bei.
-            </p>
-            <IonButton onClick={handleCreateGroup}>
-              Neue Gruppe erstellen
-            </IonButton>
-          </div>
-        )}
+                  <IonCardHeader>
+                    <IonCardTitle>{group.name}</IonCardTitle>
+                    <IonCardSubtitle>
+                      <IonIcon icon={personOutline} /> Mitglieder:{" "}
+                      {group.memberIds.length}
+                    </IonCardSubtitle>
+                  </IonCardHeader>
+                  <IonCardContent>
+                    <p className="group-created-at">
+                      <IonIcon icon={calendar} /> Erstellt am{" "}
+                      {formatDate(group.createdAt)}
+                    </p>
+                  </IonCardContent>
+                </IonCard>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-groups-container ion-padding ion-text-center">
+              <IonIcon icon={people} size="large" />
+              <h2>Noch keine Gruppen</h2>
+              <p>
+                Erstelle eine neue Gruppe oder tritt einer bestehenden Gruppe
+                bei.
+              </p>
+              <IonButton onClick={handleCreateGroup}>
+                Neue Gruppe erstellen
+              </IonButton>
+            </div>
+          )}
 
+          {/* Create Group Modal */}
+          <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
+            <IonHeader>
+              <IonToolbar>
+                <IonTitle>Neue Gruppe erstellen</IonTitle>
+                <IonButtons slot="end">
+                  <IonButton onClick={() => setShowModal(false)}>
+                    Abbrechen
+                  </IonButton>
+                </IonButtons>
+              </IonToolbar>
+            </IonHeader>
+            <IonContent>
+              <IonList>
+                <IonItem>
+                  <IonLabel position="stacked">Gruppenname*</IonLabel>
+                  <IonInput
+                    value={groupName}
+                    onIonChange={(e) => setGroupName(e.detail.value || "")}
+                    placeholder="Gib einen Gruppennamen ein"
+                    required
+                  />
+                </IonItem>
+              </IonList>
+              <div className="ion-padding">
+                <IonButton expand="block" onClick={handleSubmit}>
+                  Gruppe erstellen
+                </IonButton>
+              </div>
+            </IonContent>
+          </IonModal>
+
+          {/* Toast for notifications */}
+          <IonToast
+            isOpen={showToast}
+            onDidDismiss={() => setShowToast(false)}
+            message={toastMessage}
+            duration={3000}
+            position="bottom"
+          />
+        </div>
+        
         {/* FAB Button for creating new groups */}
         {user && (
           <IonFab
@@ -242,47 +287,6 @@ const Groups: React.FC = () => {
             </IonFabButton>
           </IonFab>
         )}
-
-        {/* Create Group Modal */}
-        <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Neue Gruppe erstellen</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setShowModal(false)}>
-                  Abbrechen
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
-          <IonContent>
-            <IonList>
-              <IonItem>
-                <IonLabel position="stacked">Gruppenname*</IonLabel>
-                <IonInput
-                  value={groupName}
-                  onIonChange={(e) => setGroupName(e.detail.value || "")}
-                  placeholder="Gib einen Gruppennamen ein"
-                  required
-                />
-              </IonItem>
-            </IonList>
-            <div className="ion-padding">
-              <IonButton expand="block" onClick={handleSubmit}>
-                Gruppe erstellen
-              </IonButton>
-            </div>
-          </IonContent>
-        </IonModal>
-
-        {/* Toast for notifications */}
-        <IonToast
-          isOpen={showToast}
-          onDidDismiss={() => setShowToast(false)}
-          message={toastMessage}
-          duration={3000}
-          position="bottom"
-        />
       </IonContent>
     </IonPage>
   );
