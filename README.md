@@ -4,9 +4,8 @@ Project repo for bachelor's course "Project Mobile Software Engineering"
 
 ## Runbook
 
-- **Web**: `npm install && npm run dev`
-- **iOS**: `npm install && npx cap open ios`
-- **Android**: `npm install && npx cap open android`
+- **iOS**: `npm install && npx cap open ios` -> Run on simulator or physical device
+- **Android**: `npm install && npx cap open android` -> Run on emulator or physical device
 
 ## Build Guide
 
