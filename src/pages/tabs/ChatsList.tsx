@@ -43,6 +43,7 @@ interface Chat {
   unreadCount?: number;
   members?: string[];
   photoURL?: string;
+  groupCreatedAt?: any;
 }
 
 const ChatsList: React.FC = () => {
@@ -92,13 +93,17 @@ const ChatsList: React.FC = () => {
           unreadCount: group.unreadCounts?.[user.uid] || 0,
           members: group.memberIds,
           photoURL: group.imageURL,
+          groupCreatedAt: group.createdAt, // Use createdAt for sorting if no last message
         }));
 
         // Sort by last message time
         chatList.sort((a, b) => {
-          const aTime = a.lastMessageTime?.toDate?.() ?? new Date(0);
-          const bTime = b.lastMessageTime?.toDate?.() ?? new Date(0);
-          return bTime.getTime() - aTime.getTime();
+          const getTimestamp = (chat: Chat) => {
+            const ts = chat.lastMessageTime ?? chat.groupCreatedAt; // Fallback to group createdAt if no last message
+            return ts?.seconds ? ts.seconds * 1e9 + (ts.nanoseconds ?? 0) : 0;
+          };
+
+          return getTimestamp(b) - getTimestamp(a); // Descending: latest first
         });
 
         setChats(chatList);
