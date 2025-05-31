@@ -15,7 +15,7 @@ import {
   IonBackButton,
   IonFooter,
 } from "@ionic/react";
-import { sendMessage, subscribeToMessages } from "@/services/chat";
+import { sendMessage, subscribeToMessages, removeMessageListener } from "@/services/chat";
 import { getGroupById } from "@/services/groups";
 import { useAuth } from "@/hooks/useAuth";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
@@ -98,7 +98,15 @@ const ChatView = () => {
   const contentRef = useRef<HTMLIonContentElement | null>(null);
 
   useEffect(() => {
-    const unsubscribe = subscribeToMessages(groupId, setMessages);
+    let callbackId: string | null = null;
+
+    const setupSubscription = async () => {
+      try {
+        callbackId = await subscribeToMessages(groupId, setMessages);
+      } catch (error) {
+        console.error("Error setting up message subscription:", error);
+      }
+    };
 
     const fetchGroupDetails = async () => {
       try {
@@ -109,8 +117,15 @@ const ChatView = () => {
       }
     };
 
+    setupSubscription();
     fetchGroupDetails();
-    return unsubscribe;
+
+    // Cleanup function
+    return () => {
+      if (callbackId) {
+        removeMessageListener(callbackId);
+      }
+    };
   }, [groupId]);
 
   useEffect(() => {

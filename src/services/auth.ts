@@ -1,61 +1,126 @@
 import { FirebaseAuthentication } from "@capacitor-firebase/authentication";
-import { doc, setDoc } from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { FirebaseFirestore } from '@capacitor-firebase/firestore';
 import { COLLECTIONS } from "@/constants/firebase";
 import { UserDoc } from "@/interfaces/firestore";
-import { EmailAuthProvider, signInWithCredential } from "firebase/auth";
-import { getFirebaseAuth } from "@/config/firebase";
 
 export const register = async (
   displayName: string,
   email: string,
   password: string
 ) => {
-  const result = await FirebaseAuthentication.createUserWithEmailAndPassword({
-    email,
-    password,
-  });
+  try {
+    // Create user with Capacitor Firebase Authentication
+    const result = await FirebaseAuthentication.createUserWithEmailAndPassword({
+      email,
+      password,
+    });
 
-  const user = result.user;
-  if (!user?.uid) throw new Error("Registration failed");
+    const user = result.user;
+    if (!user?.uid) throw new Error("Registration failed");
 
-  // Create Firestore doc
-  const userData: UserDoc = {
-    uid: user.uid,
-    email: user.email ?? email,
-    displayName,
-    createdAt: new Date(),
-  };
+    // Update user profile with display name
+    await FirebaseAuthentication.updateProfile({
+      displayName,
+    });
 
-  await setDoc(doc(db, COLLECTIONS.USERS, user.uid), userData);
+    // Create user document in Firestore using Capacitor plugin
+    const userData: UserDoc = {
+      uid: user.uid,
+      email: user.email ?? email,
+      displayName,
+      createdAt: new Date(),
+    };
 
-  return user;
+    // Use Capacitor Firestore plugin to create user document
+    await FirebaseFirestore.setDocument({
+      reference: `${COLLECTIONS.USERS}/${user.uid}`,
+      data: userData,
+    });
+
+    return user;
+  } catch (error) {
+    console.error("Registration error:", error);
+    throw error;
+  }
 };
 
 export const login = async (
   email: string,
   password: string
 ) => {
-  const result = await FirebaseAuthentication.signInWithEmailAndPassword({
-    email,
-    password,
-  });
+  try {
+    // Use Capacitor Firebase Authentication
+    const result = await FirebaseAuthentication.signInWithEmailAndPassword({
+      email,
+      password,
+    });
 
-  if (!result.user) throw new Error("Login failed");
+    if (!result.user) throw new Error("Login failed");
 
-  // Bridge to Firebase Web SDK for Firestore access
-  const credential = EmailAuthProvider.credential(email, password);
-  const auth = await getFirebaseAuth();
-  await signInWithCredential(auth, credential);
-
-  return result.user;
+    console.log("Login successful:", result.user);
+    return result.user;
+  } catch (error) {
+    console.error("Login error:", error);
+    throw error;
+  }
 };
 
 export const logout = async () => {
-  await FirebaseAuthentication.signOut();
+  try {
+    await FirebaseAuthentication.signOut();
+    console.log("Logout successful");
+  } catch (error) {
+    console.error("Logout error:", error);
+    throw error;
+  }
 };
 
 export const getCurrentUser = async () => {
-  const result = await FirebaseAuthentication.getCurrentUser();
-  return result.user; // or null
+  try {
+    const result = await FirebaseAuthentication.getCurrentUser();
+    return result.user;
+  } catch (error) {
+    console.error("Get current user error:", error);
+    return null;
+  }
+};
+
+export const resetPassword = async (email: string) => {
+  try {
+    await FirebaseAuthentication.sendPasswordResetEmail({ email });
+    console.log("Password reset email sent");
+  } catch (error) {
+    console.error("Password reset error:", error);
+    throw error;
+  }
+};
+
+export const updateUserProfile = async (displayName: string, photoURL?: string) => {
+  try {
+    await FirebaseAuthentication.updateProfile({
+      displayName,
+      photoUrl: photoURL,
+    });
+    console.log("Profile updated successfully");
+  } catch (error) {
+    console.error("Profile update error:", error);
+    throw error;
+  }
+};
+
+export const deleteUser = async () => {
+  try {
+    await FirebaseAuthentication.deleteUser();
+    console.log("User deleted successfully");
+  } catch (error) {
+    console.error("Delete user error:", error);
+    throw error;
+  }
+};
+
+// Helper function to listen to auth state changes
+export const onAuthStateChanged = (callback: (user: any) => void) => {
+  return FirebaseAuthentication.addListener('authStateChange', (result) => {
+    callback(result.user);
+  });
 };

@@ -1,5 +1,4 @@
-import { addDoc, collection, Timestamp, getDoc, doc, updateDoc, getDocs, query, where, orderBy } from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { FirebaseFirestore } from "@capacitor-firebase/firestore";
 import { COLLECTIONS } from "@/constants/firebase";
 import { GroupDoc } from "@/interfaces/firestore";
 
@@ -22,20 +21,30 @@ export const createGroup = async (
     name: groupName,
     memberIds,
     createdBy,
-    createdAt: Timestamp.now() as unknown as Date,
+    createdAt: { __type__: 'timestamp' } as unknown as Date,
   };
 
-  const docRef = await addDoc(collection(db, COLLECTIONS.GROUPS), group);
-  return docRef.id;
+  const docRef = await FirebaseFirestore.addDocument({
+    reference: COLLECTIONS.GROUPS,
+    data: group
+  });
+  
+  // Extract document ID from the reference path
+  const pathParts = docRef.reference.path.split('/');
+  return pathParts[pathParts.length - 1];
 };
 
 export const getGroupById = async (groupId: string): Promise<GroupDoc & { id: string } | null> => {
   try {
-    const groupDoc = await getDoc(doc(db, COLLECTIONS.GROUPS, groupId));
-    if (groupDoc.exists()) {
+    const groupDocPath = `${COLLECTIONS.GROUPS}/${groupId}`;
+    const groupDoc = await FirebaseFirestore.getDocument({
+      reference: groupDocPath
+    });
+    
+    if (groupDoc.snapshot?.data) {
       return {
-        id: groupDoc.id,
-        ...groupDoc.data()
+        id: groupId,
+        ...groupDoc.snapshot.data
       } as GroupDoc & { id: string };
     }
     return null;
@@ -47,18 +56,22 @@ export const getGroupById = async (groupId: string): Promise<GroupDoc & { id: st
 
 export const getAllGroups = async (): Promise<(GroupDoc & { id: string })[]> => {
   try {
-    const q = query(
-      collection(db, "groups"),
-      orderBy("createdAt", "desc")
-    );
-    const snapshot = await getDocs(q);
-    const groups: (GroupDoc & { id: string })[] = [];
-    snapshot.forEach((doc) => {
-      groups.push({
-        id: doc.id,
-        ...doc.data()
-      } as GroupDoc & { id: string });
+    const result = await FirebaseFirestore.getCollection({
+      reference: COLLECTIONS.GROUPS,
+      queryConstraints: [
+        {
+          type: 'orderBy',
+          fieldPath: 'createdAt',
+          directionStr: 'desc',
+        },
+      ],
     });
+    
+    const groups: (GroupDoc & { id: string })[] = result.snapshots.map((doc: any) => ({
+      id: doc.id,
+      ...doc.data
+    } as GroupDoc & { id: string }));
+    
     return groups;
   } catch (error) {
     console.error('Error fetching groups:', error);
@@ -68,21 +81,26 @@ export const getAllGroups = async (): Promise<(GroupDoc & { id: string })[]> => 
 
 export const getUserGroups = async (userId: string): Promise<(GroupDoc & { id: string })[]> => {
   try {
-    const q = query(
-      collection(db, COLLECTIONS.GROUPS),
-      where("memberIds", "array-contains", userId),
-      orderBy("createdAt", "desc")
-    );
-    
-    const querySnapshot = await getDocs(q);
-    const groups: (GroupDoc & { id: string })[] = [];
-    
-    querySnapshot.forEach((doc) => {
-      groups.push({
-        id: doc.id,
-        ...doc.data()
-      } as GroupDoc & { id: string });
+    // Since Capacitor Firebase doesn't support 'where' in queryConstraints,
+    // we'll get all groups and filter them client-side
+    const result = await FirebaseFirestore.getCollection({
+      reference: COLLECTIONS.GROUPS,
+      queryConstraints: [
+        {
+          type: 'orderBy',
+          fieldPath: 'createdAt',
+          directionStr: 'desc',
+        },
+      ],
     });
+    
+    // Filter groups where the user is a member
+    const groups: (GroupDoc & { id: string })[] = result.snapshots
+      .map((doc: any) => ({
+        id: doc.id,
+        ...doc.data
+      } as GroupDoc & { id: string }))
+      .filter((group) => group.memberIds && group.memberIds.includes(userId));
     
     return groups;
   } catch (error) {

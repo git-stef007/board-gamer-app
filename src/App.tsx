@@ -42,6 +42,7 @@ import "@ionic/react/css/palettes/dark.system.css";
 import "./theme/variables.css";
 import "./App.css";
 import { Capacitor } from "@capacitor/core";
+import './config/firebase';
 
 setupIonicReact();
 

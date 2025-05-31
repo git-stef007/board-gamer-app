@@ -24,17 +24,10 @@ import {
 } from "ionicons/icons";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  onSnapshot,
-} from "firebase/firestore";
-import { getMessaging, getToken } from "firebase/messaging";
 import { useHistory } from "react-router-dom";
 import "./ChatsList.css";
-import { requestAndSaveFcmToken } from "@/services/fcm";
+import { requestAndSaveFcmToken, onMessageListener } from "@/services/fcm";
+import { getUserGroups } from "@/services/groups";
 import { generateHashedGradient } from "@/utils/colorGenerator";
 import { formatTimestamp } from "@/utils/timeFormatter";
 import { GroupDoc } from "@/interfaces/firestore";
@@ -65,12 +58,10 @@ const ChatsList: React.FC = () => {
   }, [notificationPermission]);  
 
   const requestNotificationPermission = async () => {
-    const permission = await Notification.requestPermission();
-    setNotificationPermission(permission);
-  
-    if (permission === "granted") {
-      const token = await requestAndSaveFcmToken();
-      if (token) console.log("FCM Token:", token);
+    const token = await requestAndSaveFcmToken();
+    if (token) {
+      console.log("FCM Token:", token);
+      setNotificationPermission("granted");
     }
   };  
 
@@ -81,30 +72,24 @@ const ChatsList: React.FC = () => {
       return;
     }
 
-    setLoading(true);
-    const db = getFirestore();
-    const q = query(
-      collection(db, "groups"),
-      where("memberIds", "array-contains", user.uid)
-    );
+    const fetchChats = async () => {
+      setLoading(true);
+      try {
+        // Use the updated getUserGroups service instead of direct Firestore calls
+        const groups = await getUserGroups(user.uid);
+        
+        const chatList: Chat[] = groups.map((group) => ({
+          id: group.id,
+          name: group.name || "Unbenannte Gruppe",
+          lastMessageContent: group.lastMessage?.content,
+          lastMessageSender: group.lastMessage?.senderName,
+          lastMessageTime: group.lastMessage?.createdAt,
+          unreadCount: group.unreadCounts?.[user.uid] || 0,
+          members: group.memberIds,
+          photoURL: group.imageURL,
+        }));
 
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const chatList: Chat[] = snapshot.docs.map((doc) => {
-          const data = doc.data() as GroupDoc;
-          return {
-            id: doc.id,
-            name: data.name || "Unbenannte Gruppe",
-            lastMessageContent: data.lastMessage?.content,
-            lastMessageSender: data.lastMessage?.senderName,
-            lastMessageTime: data.lastMessage?.createdAt,
-            unreadCount: data.unreadCounts?.[user.uid] || 0, // TODO: Unread count needs to be implemented in Firebase
-            members: data.memberIds,
-            photoURL: data.imageURL,
-          };
-        });
-
+        // Sort by last message time
         chatList.sort((a, b) => {
           const aTime = a.lastMessageTime?.toDate?.() || new Date(0);
           const bTime = b.lastMessageTime?.toDate?.() || new Date(0);
@@ -112,15 +97,22 @@ const ChatsList: React.FC = () => {
         });
 
         setChats(chatList);
-        setLoading(false);
-      },
-      (err) => {
+      } catch (err) {
         console.error("Fehler beim Abrufen der Chats:", err);
+      } finally {
         setLoading(false);
       }
-    );
+    };
 
-    return () => unsubscribe();
+    fetchChats();
+    
+    // Set up real-time updates using the message listener
+    const removeListener = onMessageListener((notification) => {
+      // Refresh chats when a new message is received
+      fetchChats();
+    });
+
+    return removeListener;
   }, [user]);
 
   const goToGroups = () => history.push("/groups");
@@ -142,27 +134,18 @@ const ChatsList: React.FC = () => {
           </IonToolbar>
         </IonHeader>
 
-        {notificationPermission !== "granted" &&
-          (() => {
-            try {
-              // Try initializing messaging to see if it's supported
-              getMessaging();
-              return (
-                <div className="notification-banner">
-                  <IonButton
-                    expand="block"
-                    onClick={requestNotificationPermission}
-                    className="notification-button"
-                  >
-                    <IonIcon slot="start" icon={notifications} />
-                    Benachrichtigungen aktivieren
-                  </IonButton>
-                </div>
-              );
-            } catch {
-              return null;
-            }
-          })()}
+        {notificationPermission !== "granted" && (
+          <div className="notification-banner">
+            <IonButton
+              expand="block"
+              onClick={requestNotificationPermission}
+              className="notification-button"
+            >
+              <IonIcon slot="start" icon={notifications} />
+              Benachrichtigungen aktivieren
+            </IonButton>
+          </div>
+        )}
 
         {loading ? (
           <div className="loading-container">

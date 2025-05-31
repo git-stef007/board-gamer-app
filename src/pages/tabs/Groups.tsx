@@ -43,14 +43,6 @@ import "./Groups.css";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
 import { createGroup, getAllGroups, getUserGroups } from "@/services/groups";
-import {
-  getFirestore,
-  collection,
-  query,
-  where,
-  getDocs,
-  orderBy,
-} from "firebase/firestore";
 import { generateHashedGradient } from "@/utils/colorGenerator";
 import { formatDate } from "@/utils/timeFormatter";
 import { GroupDoc } from "@/interfaces/firestore";
@@ -80,7 +72,6 @@ const Groups: React.FC = () => {
 
       setLoading(true);
       try {
-        const db = getFirestore();
         let groupsList: GroupWithId[] = [];
 
         if (selectedSegment === "all") {
@@ -89,7 +80,6 @@ const Groups: React.FC = () => {
         } else {
           // Fetch only user's groups
           if (user) {
-            // Using the service function
             groupsList = await getUserGroups(user.uid);
           }
         }
@@ -132,25 +122,12 @@ const Groups: React.FC = () => {
       setToastMessage("Gruppe erfolgreich erstellt!");
       setShowToast(true);
 
-      // Refresh the groups list
-      const db = getFirestore();
-      const q = query(
-        collection(db, "groups"),
-        where("memberIds", "array-contains", user.uid),
-        orderBy("createdAt", "desc")
-      );
-
-      const querySnapshot = await getDocs(q);
-      const groupsList: GroupWithId[] = [];
-
-      querySnapshot.forEach((doc) => {
-        groupsList.push({
-          id: doc.id,
-          ...doc.data(),
-        } as GroupWithId);
-      });
-
-      setGroups(groupsList);
+      // Refresh the groups list using the updated service
+      const refreshedGroups = selectedSegment === "all" 
+        ? await getAllGroups() 
+        : await getUserGroups(user.uid);
+      
+      setGroups(refreshedGroups);
     } catch (error) {
       console.error("Error creating group:", error);
       setToastMessage(

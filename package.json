@@ -13,7 +13,10 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@capacitor-firebase/app": "^7.2.0",
     "@capacitor-firebase/authentication": "^7.2.0",
+    "@capacitor-firebase/firestore": "^7.2.0",
+    "@capacitor-firebase/messaging": "^7.2.0",
     "@capacitor/android": "^7.2.0",
     "@capacitor/app": "7.0.1",
     "@capacitor/core": "7.2.0",
@@ -26,7 +29,7 @@
     "@ionic/react-router": "^8.5.0",
     "@types/react-router": "^5.1.20",
     "@types/react-router-dom": "^5.3.3",
-    "firebase": "^11.6.0",
+    "firebase": "^11.8.1",
     "ionicons": "^7.4.0",
     "react": "19.0.0",
     "react-dom": "19.0.0",

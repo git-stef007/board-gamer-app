@@ -1,36 +1,38 @@
-import {
-  collection,
-  addDoc,
-  serverTimestamp,
-  query,
-  orderBy,
-  onSnapshot,
-  updateDoc,
-  doc,
-} from "firebase/firestore";
-import { db } from "@/config/firebase";
+import { FirebaseFirestore } from "@capacitor-firebase/firestore";
 import { COLLECTIONS } from "@/constants/firebase";
 import { GroupDoc, GroupMessageDoc } from "@/interfaces/firestore";
 
-export const subscribeToMessages = (
+export const subscribeToMessages = async (
   groupId: string,
   callback: (messages: (GroupMessageDoc & { id: string })[]) => void
 ) => {
-  const messagesRef = collection(
-    db,
-    COLLECTIONS.GROUPS,
-    groupId,
-    COLLECTIONS.MESSAGES
+  const collectionPath = `${COLLECTIONS.GROUPS}/${groupId}/${COLLECTIONS.MESSAGES}`;
+  
+  const callbackId = await FirebaseFirestore.addCollectionSnapshotListener(
+    {
+      reference: collectionPath,
+      queryConstraints: [
+        {
+          type: 'orderBy',
+          fieldPath: 'createdAt',
+          directionStr: 'asc',
+        },
+      ],
+    },
+    (event, error) => {
+      if (error) {
+        console.error(error);
+      } else {
+        const messages = event?.snapshots.map((doc: any) => ({
+          id: doc.id,
+          ...doc.data
+        } as GroupMessageDoc & { id: string }));
+        callback(messages || []);
+      }
+    }
   );
-  const q = query(messagesRef, orderBy("createdAt", "asc"));
-
-  return onSnapshot(q, (snapshot) => {
-    const messages = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data()
-    } as GroupMessageDoc & { id: string }));
-    callback(messages);
-  });
+  
+  return callbackId;
 };
 
 export const sendMessage = async (
@@ -39,23 +41,21 @@ export const sendMessage = async (
   senderName: string,
   content: string
 ) => {
-  const messagesRef = collection(
-    db,
-    COLLECTIONS.GROUPS,
-    groupId,
-    COLLECTIONS.MESSAGES
-  );
+  const messagesCollectionPath = `${COLLECTIONS.GROUPS}/${groupId}/${COLLECTIONS.MESSAGES}`;
 
   // Message for the subcollection
-  const messageData: GroupMessageDoc = {
+  const messageData: Omit<GroupMessageDoc, 'createdAt'> & { createdAt: any } = {
     senderId,
     senderName,
     content,
-    createdAt: serverTimestamp() as unknown as Date,
+    createdAt: { __type__: 'timestamp' }, // Server timestamp
   };
 
   // Add message to messages subcollection
-  await addDoc(messagesRef, messageData);
+  await FirebaseFirestore.addDocument({
+    reference: messagesCollectionPath,
+    data: messageData
+  });
 
   // Update last message in group document (for chats list view)
   const lastMessageUpdate: Pick<GroupDoc, 'lastMessage' | 'updatedAt'> = {
@@ -63,11 +63,20 @@ export const sendMessage = async (
       senderId,
       senderName,
       content,
-      createdAt: serverTimestamp() as unknown as Date,
+      createdAt: { __type__: 'timestamp' } as unknown as Date,
     },
-    updatedAt: serverTimestamp() as unknown as Date
+    updatedAt: { __type__: 'timestamp' } as unknown as Date
   };
 
   // Update the group document
-  await updateDoc(doc(db, COLLECTIONS.GROUPS, groupId), lastMessageUpdate);
+  const groupDocPath = `${COLLECTIONS.GROUPS}/${groupId}`;
+  await FirebaseFirestore.updateDocument({
+    reference: groupDocPath,
+    data: lastMessageUpdate
+  });
+};
+
+// Utility function to remove snapshot listener
+export const removeMessageListener = async (callbackId: string) => {
+  return await FirebaseFirestore.removeSnapshotListener({ callbackId });
 };
