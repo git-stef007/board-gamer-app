@@ -31,6 +31,7 @@ import { getUserGroups } from "@/services/groups";
 import { generateHashedGradient } from "@/utils/colorGenerator";
 import { formatTimestamp } from "@/utils/timeFormatter";
 import { GroupDoc } from "@/interfaces/firestore";
+import { FirebaseMessaging } from "@capacitor-firebase/messaging";
 
 interface Chat {
   id: string;
@@ -47,23 +48,26 @@ const ChatsList: React.FC = () => {
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>([]);
   const [loading, setLoading] = useState(true);
-  const [notificationPermission, setNotificationPermission] =
-    useState<NotificationPermission>(() => Notification.permission);
+  const [pushPermissionGranted, setPushPermissionGranted] = useState(false);
   const history = useHistory();
 
   useEffect(() => {
-    if (notificationPermission === "granted") {
-      setNotificationPermission("granted"); // ensures re-render hides the banner
-    }
-  }, [notificationPermission]);  
+    // Check permission status on mount
+    FirebaseMessaging.checkPermissions().then(({ receive }) => {
+      setPushPermissionGranted(receive === "granted");
+    });
+  }, []);
 
   const requestNotificationPermission = async () => {
-    const token = await requestAndSaveFcmToken();
-    if (token) {
-      console.log("FCM Token:", token);
-      setNotificationPermission("granted");
+    const { receive } = await FirebaseMessaging.requestPermissions();
+    if (receive === "granted") {
+      const token = await requestAndSaveFcmToken();
+      if (token) {
+        console.log("FCM Token:", token);
+        setPushPermissionGranted(true);
+      }
     }
-  };  
+  };
 
   useEffect(() => {
     if (!user) {
@@ -77,7 +81,7 @@ const ChatsList: React.FC = () => {
       try {
         // Use the updated getUserGroups service instead of direct Firestore calls
         const groups = await getUserGroups(user.uid);
-        
+
         const chatList: Chat[] = groups.map((group) => ({
           id: group.id,
           name: group.name || "Unbenannte Gruppe",
@@ -105,7 +109,7 @@ const ChatsList: React.FC = () => {
     };
 
     fetchChats();
-    
+
     // Set up real-time updates using the message listener
     const removeListener = onMessageListener((notification) => {
       // Refresh chats when a new message is received
@@ -134,7 +138,7 @@ const ChatsList: React.FC = () => {
           </IonToolbar>
         </IonHeader>
 
-        {notificationPermission !== "granted" && (
+        {!pushPermissionGranted && (
           <div className="notification-banner">
             <IonButton
               expand="block"
