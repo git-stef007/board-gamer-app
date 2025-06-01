@@ -1176,7 +1176,7 @@ PODS:
     - Capacitor
   - CapacitorKeyboard (7.0.1):
     - Capacitor
-  - CapacitorPushNotifications (7.0.1):
+  - CapacitorLocalNotifications (7.0.1):
     - Capacitor
   - CapacitorStatusBar (7.0.1):
     - Capacitor
@@ -1371,7 +1371,7 @@ DEPENDENCIES:
   - "CapacitorFirebaseMessaging (from `../../node_modules/@capacitor-firebase/messaging`)"
   - "CapacitorHaptics (from `../../node_modules/@capacitor/haptics`)"
   - "CapacitorKeyboard (from `../../node_modules/@capacitor/keyboard`)"
-  - "CapacitorPushNotifications (from `../../node_modules/@capacitor/push-notifications`)"
+  - "CapacitorLocalNotifications (from `../../node_modules/@capacitor/local-notifications`)"
   - "CapacitorStatusBar (from `../../node_modules/@capacitor/status-bar`)"
 
 SPEC REPOS:
@@ -1418,8 +1418,8 @@ EXTERNAL SOURCES:
     :path: "../../node_modules/@capacitor/haptics"
   CapacitorKeyboard:
     :path: "../../node_modules/@capacitor/keyboard"
-  CapacitorPushNotifications:
-    :path: "../../node_modules/@capacitor/push-notifications"
+  CapacitorLocalNotifications:
+    :path: "../../node_modules/@capacitor/local-notifications"
   CapacitorStatusBar:
     :path: "../../node_modules/@capacitor/status-bar"
 
@@ -1435,7 +1435,7 @@ SPEC CHECKSUMS:
   CapacitorFirebaseMessaging: 1fbce9c25db44972d210347fecc02a2a162e2d3f
   CapacitorHaptics: 70e47470fa1a6bd6338cd102552e3846b7f9a1b3
   CapacitorKeyboard: 969647d0ca2e5c737d7300088e2517aa832434e2
-  CapacitorPushNotifications: 0b653a3264d56daccf0e8769fff15d2f48306de6
+  CapacitorLocalNotifications: 4ea60b9347eac60b37cb4daaf62d12060bb00972
   CapacitorStatusBar: 275cbf2f4dfc00388f519ef80c7ec22edda342c9
   FirebaseAppCheckInterop: 72066489c209823649a997132bcd9269bc33a4bb
   FirebaseAuth: 77e25aa24f3e1c626c5babd3338551fc1669ee0e
@@ -1458,6 +1458,6 @@ SPEC CHECKSUMS:
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   RecaptchaInterop: 7d1a4a01a6b2cb1610a47ef3f85f0c411434cb21
 
-PODFILE CHECKSUM: a0c8bd688ec674c80d5546b889cb6a32d42bd4ae
+PODFILE CHECKSUM: 77d869bcc083dedaf71c28a265b0286c8a60df24
 
 COCOAPODS: 1.15.2

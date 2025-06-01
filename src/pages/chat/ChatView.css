@@ -1,6 +1,6 @@
 .chat-view-content {
   --padding-top: 12px;
-  --padding-bottom: 70px;
+  --padding-bottom: 12px;
   background: var(--ion-color-light);
 }
 

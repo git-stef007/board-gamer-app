@@ -1,3 +1,4 @@
+import React, { useEffect } from "react";
 import {
   IonApp,
   IonIcon,
@@ -7,11 +8,9 @@ import {
   IonTabButton,
   IonTabs,
   setupIonicReact,
-  IonPage,
-  IonContent,
 } from "@ionic/react";
 import { IonReactRouter } from "@ionic/react-router";
-import { Redirect, Route, Switch } from "react-router-dom";
+import { Redirect, Route, Switch, useHistory } from "react-router-dom";
 import {
   calendarOutline,
   peopleOutline,
@@ -41,16 +40,88 @@ import "@ionic/react/css/palettes/dark.system.css";
 
 import "./theme/variables.css";
 import "./App.css";
-import { Capacitor } from "@capacitor/core";
-import './config/firebase';
+import "./config/firebase";
+
+import { FirebaseMessaging } from "@capacitor-firebase/messaging";
+import { onMessageListener } from "./services/notifications";
+import type { PluginListenerHandle } from "@capacitor/core";
 
 setupIonicReact();
+
+// Create a separate component that has access to history
+const NotificationHandler: React.FC = () => {
+  const history = useHistory();
+  useEffect(() => {
+    let notificationTapHandle: PluginListenerHandle | null = null;
+    let messageListenerCleanup: (() => void) | null = null;
+
+    const setupNotificationListeners = async () => {
+      try {
+        console.log("Setting up notification listeners...");
+
+        // Set up the foreground message listener
+        messageListenerCleanup = onMessageListener((notification) => {
+          console.log("Foreground notification handled:", notification);
+        });
+
+        // Set up the tap listener for when notification is tapped
+        notificationTapHandle = await FirebaseMessaging.addListener(
+          "notificationActionPerformed",
+          (event: any) => {
+            console.log("Push Notification tapped:", JSON.stringify(event));
+            
+            let groupId =
+              event.notification?.data?.groupId ||
+              event.notification?.extra?.groupId ||
+              event.data?.groupId ||
+              "";
+            
+            console.log("Extracted groupId:", groupId);
+            
+            if (groupId) {
+              console.log("Navigating to chat:", `/chats/${groupId}`);
+              history.push(`/chats/${groupId}`);
+            } else {
+              console.warn("No groupId found in notification");
+              history.push('/chats');
+            }
+          }
+        );
+        
+        console.log("All notification listeners set up successfully");
+      } catch (error) {
+        console.error("Error setting up notification listeners:", error);
+      }
+    };
+
+    const timeoutId = setTimeout(() => {
+      setupNotificationListeners();
+    }, 500);
+
+    return () => {
+      clearTimeout(timeoutId);
+      
+      if (notificationTapHandle) {
+        notificationTapHandle.remove();
+        console.log("Notification tap listener cleaned up");
+      }
+      
+      if (messageListenerCleanup) {
+        messageListenerCleanup();
+        console.log("Message listener cleaned up");
+      }
+    };
+  }, []);
+
+  return null; // This component doesn't render anything
+};
 
 const App: React.FC = () => {
   return (
     <IonApp>
       <AuthProvider>
         <IonReactRouter>
+          <NotificationHandler />
           <IonRouterOutlet>
             <Switch>
               {/* Public Routes */}

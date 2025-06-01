@@ -27,7 +27,7 @@ import UserProfileDropdown from "@/components/UserProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
 import { useHistory } from "react-router-dom";
 import "./ChatsList.css";
-import { requestAndSaveFcmToken, onMessageListener } from "@/services/fcm";
+import { requestAndSaveFcmToken, onMessageListener } from "@/services/notifications";
 import { getUserGroups } from "@/services/groups";
 import { generateHashedGradient } from "@/utils/colorGenerator";
 import { formatTimestamp } from "@/utils/timeFormatter";
@@ -117,7 +117,7 @@ const ChatsList: React.FC = () => {
     fetchChats();
 
     // Set up real-time updates using the message listener
-    const removeListener = onMessageListener((notification) => {
+    const removeListener = onMessageListener((notificatio: any) => {
       // Refresh chats when a new message is received
       fetchChats();
     });
