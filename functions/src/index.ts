@@ -9,7 +9,7 @@ const db = admin.firestore();
 interface Message {
   senderId: string;
   senderName: string;
-  text: string;
+  content: string;
   createdAt: string;
 }
 
@@ -53,8 +53,8 @@ export const sendMessageNotification = onDocumentCreated(
     const messagePayload: admin.messaging.MulticastMessage = {
       tokens,
       notification: {
-        title: `${message.senderName} (in ${group.name})`,
-        body: message.text || "Neue Nachricht",
+        title: `${message.senderName} @ ${group.name}`,
+        body: message.content || "Neue Nachricht",
       },
       data: {
         groupId, // include groupId for navigation on client
