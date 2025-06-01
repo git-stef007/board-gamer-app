@@ -23,7 +23,10 @@ interface User {
 }
 
 export const sendMessageNotification = onDocumentCreated(
-  "groups/{groupId}/messages/{messageId}",
+  {
+    region: "europe-west3",
+    document: "groups/{groupId}/messages/{messageId}"
+  },
   async (event) => {
     const { groupId } = event.params;
     const message = event.data?.data() as Message;
@@ -58,7 +61,7 @@ export const sendMessageNotification = onDocumentCreated(
       },
     };
 
-    const response = await admin.messaging().sendMulticast(messagePayload);
+    const response = await admin.messaging().sendEachForMulticast(messagePayload);
     logger.info(`Sent notification to ${response.successCount} devices`);
   }
 );
