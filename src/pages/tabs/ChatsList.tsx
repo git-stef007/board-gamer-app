@@ -15,6 +15,9 @@ import {
   IonBadge,
   IonSpinner,
   IonSkeletonText,
+  IonRefresher,
+  IonRefresherContent,
+  RefresherEventDetail,
 } from "@ionic/react";
 import {
   notifications,
@@ -72,6 +75,44 @@ const ChatsList: React.FC = () => {
     }
   };
 
+  // Extract fetchChats into a separate function so it can be reused
+  const fetchChats = async () => {
+    if (!user) {
+      setChats([]);
+      return;
+    }
+
+    try {
+      const groups = await getUserGroups(user.uid);
+
+      const chatList: Chat[] = groups.map((group) => ({
+        id: group.id,
+        name: group.name || "Unbenannte Gruppe",
+        lastMessageContent: group.lastMessage?.content,
+        lastMessageSender: group.lastMessage?.senderName,
+        lastMessageTime: group.lastMessage?.createdAt,
+        unreadCount: group.unreadCounts?.[user.uid] || 0,
+        members: group.memberIds,
+        photoURL: group.imageURL,
+        groupCreatedAt: group.createdAt,
+      }));
+
+      // Sort by last message time
+      chatList.sort((a, b) => {
+        const getTimestamp = (chat: Chat) => {
+          const ts = chat.lastMessageTime ?? chat.groupCreatedAt;
+          return ts?.seconds ? ts.seconds * 1e9 + (ts.nanoseconds ?? 0) : 0;
+        };
+
+        return getTimestamp(b) - getTimestamp(a); // Descending: latest first
+      });
+
+      setChats(chatList);
+    } catch (err) {
+      console.error("Fehler beim Abrufen der Chats:", err);
+    }
+  };
+
   useEffect(() => {
     if (!user) {
       setChats([]);
@@ -79,51 +120,33 @@ const ChatsList: React.FC = () => {
       return;
     }
 
-    const fetchChats = async () => {
+    const loadInitialData = async () => {
       setLoading(true);
-      try {
-        const groups = await getUserGroups(user.uid);
-
-        const chatList: Chat[] = groups.map((group) => ({
-          id: group.id,
-          name: group.name || "Unbenannte Gruppe",
-          lastMessageContent: group.lastMessage?.content,
-          lastMessageSender: group.lastMessage?.senderName,
-          lastMessageTime: group.lastMessage?.createdAt,
-          unreadCount: group.unreadCounts?.[user.uid] || 0,
-          members: group.memberIds,
-          photoURL: group.imageURL,
-          groupCreatedAt: group.createdAt, // Use createdAt for sorting if no last message
-        }));
-
-        // Sort by last message time
-        chatList.sort((a, b) => {
-          const getTimestamp = (chat: Chat) => {
-            const ts = chat.lastMessageTime ?? chat.groupCreatedAt; // Fallback to group createdAt if no last message
-            return ts?.seconds ? ts.seconds * 1e9 + (ts.nanoseconds ?? 0) : 0;
-          };
-
-          return getTimestamp(b) - getTimestamp(a); // Descending: latest first
-        });
-
-        setChats(chatList);
-      } catch (err) {
-        console.error("Fehler beim Abrufen der Chats:", err);
-      } finally {
-        setLoading(false);
-      }
+      await fetchChats();
+      setLoading(false);
     };
 
-    fetchChats();
+    loadInitialData();
 
     // Set up real-time updates using the message listener
-    const removeListener = onMessageListener((notificatio: any) => {
+    const removeListener = onMessageListener((notification: any) => {
       // Refresh chats when a new message is received
       fetchChats();
     });
 
     return removeListener;
   }, [user]);
+
+  // Handle pull-to-refresh
+  const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
+    try {
+      await fetchChats();
+    } catch (error) {
+      console.error("Error refreshing chats:", error);
+    } finally {
+      event.detail.complete();
+    }
+  };
 
   const goToGroups = () => history.push("/groups");
 
@@ -138,6 +161,15 @@ const ChatsList: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon="chevron-down-circle-outline"
+            pullingText="Zum Aktualisieren nach unten ziehen"
+            refreshingSpinner="circles"
+            refreshingText="Chats werden aktualisiert..."
+          />
+        </IonRefresher>
+
         <IonHeader collapse="condense">
           <IonToolbar>
             <IonTitle size="large">Chats</IonTitle>

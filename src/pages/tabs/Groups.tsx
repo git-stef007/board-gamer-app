@@ -32,6 +32,9 @@ import {
   IonSegment,
   IonSegmentButton,
   IonSkeletonText,
+  IonRefresher,
+  IonRefresherContent,
+  RefresherEventDetail,
 } from "@ionic/react";
 import {
   add,
@@ -63,41 +66,55 @@ const Groups: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedSegment, setSelectedSegment] = useState<"all" | "mine">("all");
 
+  // Extract fetchGroups into a separate function so it can be reused
+  const fetchGroups = async () => {
+    if (!user && selectedSegment === "mine") {
+      setGroups([]);
+      return;
+    }
+
+    try {
+      let groupsList: GroupWithId[] = [];
+
+      if (selectedSegment === "all") {
+        // Fetch all groups
+        groupsList = await getAllGroups();
+      } else {
+        // Fetch only user's groups
+        if (user) {
+          groupsList = await getUserGroups(user.uid);
+        }
+      }
+
+      setGroups(groupsList);
+    } catch (error) {
+      console.error("Fehler beim Laden der Gruppen:", error);
+      setToastMessage("Fehler beim Laden der Gruppen");
+      setShowToast(true);
+    }
+  };
+
   // Fetch groups based on selected segment
   useEffect(() => {
-    const fetchGroups = async () => {
-      if (!user && selectedSegment === "mine") {
-        setGroups([]);
-        setLoading(false);
-        return;
-      }
-
+    const loadInitialData = async () => {
       setLoading(true);
-      try {
-        let groupsList: GroupWithId[] = [];
-
-        if (selectedSegment === "all") {
-          // Fetch all groups
-          groupsList = await getAllGroups();
-        } else {
-          // Fetch only user's groups
-          if (user) {
-            groupsList = await getUserGroups(user.uid);
-          }
-        }
-
-        setGroups(groupsList);
-      } catch (error) {
-        console.error("Fehler beim Laden der Gruppen:", error);
-        setToastMessage("Fehler beim Laden der Gruppen");
-        setShowToast(true);
-      } finally {
-        setLoading(false);
-      }
+      await fetchGroups();
+      setLoading(false);
     };
 
-    fetchGroups();
+    loadInitialData();
   }, [selectedSegment, user]);
+
+  // Handle pull-to-refresh
+  const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
+    try {
+      await fetchGroups();
+    } catch (error) {
+      console.error("Error refreshing groups:", error);
+    } finally {
+      event.detail.complete();
+    }
+  };
 
   const handleCreateGroup = () => {
     setShowModal(true);
@@ -124,13 +141,8 @@ const Groups: React.FC = () => {
       setToastMessage("Gruppe erfolgreich erstellt!");
       setShowToast(true);
 
-      // Refresh the groups list using the updated service
-      const refreshedGroups =
-        selectedSegment === "all"
-          ? await getAllGroups()
-          : await getUserGroups(user.uid);
-
-      setGroups(refreshedGroups);
+      // Refresh the groups list
+      await fetchGroups();
     } catch (error) {
       console.error("Error creating group:", error);
       setToastMessage(
@@ -171,6 +183,15 @@ const Groups: React.FC = () => {
         </IonToolbar>
       </IonHeader>
       <IonContent fullscreen>
+        <IonRefresher slot="fixed" onIonRefresh={handleRefresh}>
+          <IonRefresherContent
+            pullingIcon="chevron-down-circle-outline"
+            pullingText="Zum Aktualisieren nach unten ziehen"
+            refreshingSpinner="circles"
+            refreshingText="Gruppen werden aktualisiert..."
+          />
+        </IonRefresher>
+
         <div className="center-horizontally">
           {/* Display the list of groups */}
           {loading ? (
