@@ -6,31 +6,6 @@ import { getCurrentUser } from "@/services/auth";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { Capacitor } from "@capacitor/core";
 
-// Enhanced utility to check current path with more debugging
-const isChatViewActive = (groupId: string) => {
-  const currentUrl = window.location.pathname;
-  const currentHash = window.location.hash;
-  const currentHref = window.location.href;
-  
-  console.log("=== SUPPRESSION CHECK ===");
-  console.log("- Current URL:", currentUrl);
-  console.log("- Current Hash:", currentHash);
-  console.log("- Current Href:", currentHref);
-  console.log("- Target GroupId:", groupId);
-  console.log("- Expected path:", `/chats/${groupId}`);
-  
-  // Check multiple possible URL formats
-  const isActive = 
-    currentUrl === `/chats/${groupId}` ||
-    currentUrl.includes(`/chats/${groupId}`) ||
-    currentHash.includes(`/chats/${groupId}`);
-  
-  console.log("- Should suppress:", isActive);
-  console.log("=== END SUPPRESSION CHECK ===");
-  
-  return isActive;
-};
-
 export const requestAndSaveFcmToken = async (): Promise<string | null> => {
   try {
     const permissionResult = await FirebaseMessaging.requestPermissions();
@@ -66,20 +41,12 @@ export const requestAndSaveFcmToken = async (): Promise<string | null> => {
 
 export const onMessageListener = (callback: (payload: any) => void) => {
   let listenerHandle: any = null;
-  let notificationCount = 0;
 
   const setupListener = async () => {
     try {
       listenerHandle = await FirebaseMessaging.addListener(
         "notificationReceived",
         async (notification: any) => {
-          notificationCount++;
-          
-          console.log("=== FCM NOTIFICATION RECEIVED ===");
-          console.log("- Notification count:", notificationCount);
-          console.log("- Raw notification:", JSON.stringify(notification, null, 2));
-          console.log("- Platform:", Capacitor.getPlatform());
-          console.log("- Is native platform:", Capacitor.isNativePlatform());
           
           // groupId extraction - matching the navigation logic
           let groupId = 
@@ -90,22 +57,12 @@ export const onMessageListener = (callback: (payload: any) => void) => {
 
           console.log("- Extracted groupId:", groupId);
 
-          // Check suppression first
-          if (groupId && isChatViewActive(groupId)) {
-            console.log("NOTIFICATION SUPPRESSED - User is viewing this chat");
-            console.log("=== END FCM NOTIFICATION (SUPPRESSED) ===");
-            return;
-          }
-
-          console.log("NOTIFICATION NOT SUPPRESSED - Will show notification");
-
           // Fix duplicate issue: iOS already shows notification when there's a notification payload
           if (Capacitor.isNativePlatform() && Capacitor.getPlatform() === 'ios') {
             // If FCM has both notification and data, iOS shows it automatically
             if (notification.notification && notification.notification.title) {
               console.log("iOS: FCM notification already shown by system, skipping local notification");
               callback(notification);
-              console.log("=== END FCM NOTIFICATION (iOS system handled) ===");
               return;
             }
           }
@@ -123,9 +80,7 @@ export const onMessageListener = (callback: (payload: any) => void) => {
             }
 
             const notificationId = Date.now();
-            
-            console.log("- Scheduling local notification with ID:", notificationId);
-            
+                        
             await LocalNotifications.schedule({
               notifications: [
                 {
@@ -137,11 +92,9 @@ export const onMessageListener = (callback: (payload: any) => void) => {
               ],
             });
             
-            console.log("Local notification scheduled successfully");
           }
 
           callback(notification);
-          console.log("=== END FCM NOTIFICATION (COMPLETED) ===");
         }
       );
       
@@ -170,10 +123,7 @@ export const onNotificationActionPerformed = (
       listenerHandle = await FirebaseMessaging.addListener(
         "notificationActionPerformed",
         (action) => {
-          console.log("=== NOTIFICATION ACTION PERFORMED ===");
-          console.log("Action:", JSON.stringify(action, null, 2));
           callback(action);
-          console.log("=== END NOTIFICATION ACTION ===");
         }
       );
     } catch (err) {
