@@ -30,12 +30,17 @@ import UserProfileDropdown from "@/components/UserProfileDropdown";
 import { useAuth } from "@/hooks/useAuth";
 import { useHistory } from "react-router-dom";
 import "./ChatsList.css";
-import { requestAndSaveFcmToken, onMessageListener } from "@/services/notifications";
+import {
+  requestAndSaveFcmToken,
+  onMessageListener,
+} from "@/services/notifications";
 import { getUserGroups } from "@/services/groups";
 import { generateHashedGradient } from "@/utils/colorGenerator";
 import { formatTimestamp } from "@/utils/timeFormatter";
 import { GroupDoc } from "@/interfaces/firestore";
 import { FirebaseMessaging } from "@capacitor-firebase/messaging";
+import { FirebaseFirestore } from "@capacitor-firebase/firestore";
+import { COLLECTIONS } from "@/constants/firebase";
 
 interface Chat {
   id: string;
@@ -47,6 +52,10 @@ interface Chat {
   members?: string[];
   photoURL?: string;
   groupCreatedAt?: any;
+}
+
+interface GroupWithId extends GroupDoc {
+  id: string;
 }
 
 const ChatsList: React.FC = () => {
@@ -75,6 +84,33 @@ const ChatsList: React.FC = () => {
     }
   };
 
+  // Convert groups to chats format
+  const convertGroupsToChats = (groups: GroupWithId[]): Chat[] => {
+    const chatList: Chat[] = groups.map((group) => ({
+      id: group.id,
+      name: group.name || "Unbenannte Gruppe",
+      lastMessageContent: group.lastMessage?.content,
+      lastMessageSender: group.lastMessage?.senderName,
+      lastMessageTime: group.lastMessage?.createdAt,
+      unreadCount: group.unreadCounts?.[user?.uid || ''] || 0,
+      members: group.memberIds,
+      photoURL: group.imageURL,
+      groupCreatedAt: group.createdAt,
+    }));
+
+    // Sort by last message time
+    chatList.sort((a, b) => {
+      const getTimestamp = (chat: Chat) => {
+        const ts = chat.lastMessageTime ?? chat.groupCreatedAt;
+        return ts?.seconds ? ts.seconds * 1e9 + (ts.nanoseconds ?? 0) : 0;
+      };
+
+      return getTimestamp(b) - getTimestamp(a); // Descending: latest first
+    });
+
+    return chatList;
+  };
+
   // Extract fetchChats into a separate function so it can be reused
   const fetchChats = async () => {
     if (!user) {
@@ -84,29 +120,7 @@ const ChatsList: React.FC = () => {
 
     try {
       const groups = await getUserGroups(user.uid);
-
-      const chatList: Chat[] = groups.map((group) => ({
-        id: group.id,
-        name: group.name || "Unbenannte Gruppe",
-        lastMessageContent: group.lastMessage?.content,
-        lastMessageSender: group.lastMessage?.senderName,
-        lastMessageTime: group.lastMessage?.createdAt,
-        unreadCount: group.unreadCounts?.[user.uid] || 0,
-        members: group.memberIds,
-        photoURL: group.imageURL,
-        groupCreatedAt: group.createdAt,
-      }));
-
-      // Sort by last message time
-      chatList.sort((a, b) => {
-        const getTimestamp = (chat: Chat) => {
-          const ts = chat.lastMessageTime ?? chat.groupCreatedAt;
-          return ts?.seconds ? ts.seconds * 1e9 + (ts.nanoseconds ?? 0) : 0;
-        };
-
-        return getTimestamp(b) - getTimestamp(a); // Descending: latest first
-      });
-
+      const chatList = convertGroupsToChats(groups);
       setChats(chatList);
     } catch (err) {
       console.error("Fehler beim Abrufen der Chats:", err);
@@ -120,21 +134,67 @@ const ChatsList: React.FC = () => {
       return;
     }
 
-    const loadInitialData = async () => {
+    let unsubscribe: any = null;
+
+    const setupRealTimeListener = async () => {
       setLoading(true);
-      await fetchChats();
-      setLoading(false);
+      
+      try {
+        // Initial load
+        await fetchChats();
+        setLoading(false);
+
+        // Set up real-time listener
+        unsubscribe = await FirebaseFirestore.addCollectionSnapshotListener(
+          {
+            reference: COLLECTIONS.GROUPS,
+            compositeFilter: {
+              type: "and",
+              queryConstraints: [
+                {
+                  type: "where",
+                  fieldPath: "memberIds",
+                  opStr: "array-contains",
+                  value: user.uid,
+                },
+              ],
+            },
+          },
+          (snapshot, error) => {
+            if (error) {
+              console.error("Error listening to groups:", error);
+              return;
+            }
+
+            if (snapshot && snapshot.snapshots) {
+              console.log('Real-time update received, updating chats...');
+              
+              // Convert snapshot to groups format
+              const groups: GroupWithId[] = snapshot.snapshots.map((doc) => ({
+                id: doc.id,
+                ...doc.data,
+              })) as GroupWithId[];
+
+              // Convert to chats and update state
+              const chatList = convertGroupsToChats(groups);
+              setChats(chatList);
+            }
+          }
+        );
+      } catch (error) {
+        console.error("Error setting up real-time listener:", error);
+        setLoading(false);
+      }
     };
 
-    loadInitialData();
+    setupRealTimeListener();
 
-    // Set up real-time updates using the message listener
-    const removeListener = onMessageListener((notification: any) => {
-      // Refresh chats when a new message is received
-      fetchChats();
-    });
-
-    return removeListener;
+    return () => {
+      if (unsubscribe && typeof unsubscribe.remove === 'function') {
+        console.log('Cleaning up Firestore listener...');
+        unsubscribe.remove();
+      }
+    };
   }, [user]);
 
   // Handle pull-to-refresh
