@@ -27,19 +27,29 @@ const ProtectedRoute: React.FC<Props> = ({ children }) => {
   if (loading) {
     return showSpinner ? (
       // Firebase Auth loading indicator
-      <IonLoading isOpen message="Authentifizierung..." />
+      <IonLoading
+        isOpen={loading && showSpinner}
+        message="Authentifizierung..."
+        spinner="crescent"
+      />
     ) : null;
   }
 
-  return user ? (
-    <>{children}</>
-  ) : (
-    <Redirect
-      to={{
-        pathname: "/login",
-        state: { from: location.pathname || "/" },
-      }}
-    />
+  return (
+    <>
+      <IonLoading
+        isOpen={loading && showSpinner}
+        message="Authentifizierung..."
+        spinner="crescent"
+      />
+      {user ? (
+        children
+      ) : (
+        <Redirect
+          to={{ pathname: "/login", state: { from: location.pathname || "/" } }}
+        />
+      )}
+    </>
   );
 };
 

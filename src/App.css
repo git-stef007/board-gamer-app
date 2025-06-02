@@ -91,3 +91,11 @@ ion-note.list-note {
   white-space: pre-line;
   hyphens: auto;
 }
+
+.center-horizontally {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+}
