@@ -1,0 +1,14 @@
+.user-profile-icon {
+  font-size: 28px;
+  padding-right: 16px;
+  cursor: pointer;
+}
+
+.user-profile-popover {
+  --width: 300px;
+}
+
+.user-info-item {
+  --padding-top: 16px;
+  --padding-bottom: 16px;
+}

@@ -1,0 +1,101 @@
+/* Global stylesheet */
+
+html, body, #root, ion-app, ion-content {
+  height: 100%;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+body::-webkit-scrollbar {
+  display: none;
+}
+/* Hide scrollbar for IE, Edge and Firefox */
+body {
+  /* IE and Edge */
+  -ms-overflow-style: none;
+  /* Firefox */
+  scrollbar-width: none;
+}
+
+/* General custom CSS for the whole app */
+
+.loading-without-background .loading-wrapper {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+/* Customizing the Ionic components via variables */
+
+.ion-page {
+  background-color: var(--ion-background-color);
+}
+
+ion-content {
+  --background: var(--ion-background-color);
+}
+
+ion-item {
+  --background: var(--ion-item-background);
+  --color: var(--ion-item-text-color);
+  --border-color: var(--ion-item-border-color);
+  /* to prevent flashing when switching color palette */
+  --transition: none;
+}
+
+ion-item .item-inner {
+  background-color: var(--ion-item-background);
+}
+
+ion-item .item-inner ion-label {
+  color: var(--ion-item-text-color);
+}
+
+/*ion-item-divider {
+  --background: var(--ion-item-divider-background);
+}*/
+
+ion-toolbar {
+  --background: var(--ion-background-color);
+  --color: var(--ion-text-color);
+}
+
+.ion-color-favorite {
+  --ion-color-base: var(--ion-color-favorite);
+  --ion-color-base-rgb: var(--ion-color-favorite-rgb);
+  --ion-color-contrast: var(--ion-color-favorite-contrast);
+  --ion-color-contrast-rgb: var(--ion-color-favorite-contrast-rgb);
+  --ion-color-shade: var(--ion-color-favorite-shade);
+  --ion-color-tint: var(--ion-color-favorite-tint);
+}
+
+ion-picker {
+  --background: var(--ion-item-background);
+  background-color: var(--ion-item-background);
+  --fade-background-rgb: var(--ion-item-background);
+  --highlight-background: var(--ion-background-color);
+  --highight-border-radius: var(--ion-background-color);
+}
+
+ion-tab-bar {
+  --background: var(--ion-item-background);
+}
+
+ion-segment-button {
+  --indicator-color: var(--ion-background-color-step-350);
+}
+
+ion-note.list-note {
+  padding-left: 8px;
+  padding-right: 8px;
+  font-size: 0.85rem;
+  color: var(--ion-text-color-step-550);
+  white-space: pre-line;
+  hyphens: auto;
+}
+
+.center-horizontally {
+  display: flex;
+  justify-content: center;
+  padding: 1rem;
+  box-sizing: border-box;
+  width: 100%;
+}

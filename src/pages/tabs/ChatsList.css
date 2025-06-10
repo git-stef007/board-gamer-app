@@ -1,0 +1,124 @@
+/* ============================
+   Leere Chatliste
+============================ */
+.empty-chats-container {
+  padding: 40px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 70vh;
+}
+
+.empty-chats-container ion-icon {
+  font-size: 64px;
+  color: var(--ion-color-medium);
+  margin-bottom: 16px;
+}
+
+.empty-chats-container h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.empty-chats-container p {
+  color: var(--ion-color-medium);
+  margin-bottom: 24px;
+  max-width: 280px;
+  text-align: center;
+}
+
+/* ============================
+   Chatliste / Chat-Zeilen
+============================ */
+
+.chat-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  min-width: 64px;
+  max-width: 72px;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  overflow: hidden;
+  background: var(--ion-color-light);
+}
+
+.default-group-image {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  width: 100%;
+  border-radius: 50%;
+}
+
+.default-group-image ion-icon {
+  font-size: 28px;
+  color: white;
+}
+
+/* Inhalt in der Zeile */
+ion-label {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Name & Zeit nebeneinander */
+.chat-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.chat-title-row h2 {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ion-color-step-850);
+  margin: 0;
+  padding: 0;
+  flex: 1;
+}
+
+.chat-title-row .chat-time {
+  font-size: 13px;
+  color: var(--ion-text-color-step-500);
+  white-space: nowrap;
+  margin-left: 12px;
+}
+
+/* Letzte Nachricht */
+.chat-last-message {
+  font-size: 14px;
+  color: var(--ion-text-color-step-500);
+  margin-top: 4px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Ungelesene Chats hervorheben */
+.unread-chat h2 {
+  font-weight: 700;
+}
+
+@media (max-width: 500px) {
+  .chat-title-row h2 {
+    font-size: 15px;
+  }
+
+  .chat-last-message {
+    font-size: 13px;
+  }
+
+  .chat-title-row .chat-time {
+    font-size: 12px;
+  }
+
+  .chat-icon-container {
+    min-width: 56px;
+  }
+}
