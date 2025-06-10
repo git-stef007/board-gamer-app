@@ -48,44 +48,12 @@ import type { PluginListenerHandle } from "@capacitor/core";
 
 setupIonicReact();
 
-<<<<<<< HEAD
-const App: React.FC = () => (
-  <IonApp>
-<IonReactRouter>
-  <IonTabs>
-    <IonRouterOutlet>
-      <Route exact path="/tab1" component={Tab1} />
-      <Route exact path="/tab2" component={Tab2} />
-      <Route exact path="/tab3" component={Tab3} />
-      <Redirect exact from="/" to="/tab1" />
-    </IonRouterOutlet>
-    
-    <IonTabBar slot="bottom">
-      <IonTabButton tab="tab1" href="/tab1">
-        <IonIcon aria-hidden="true" icon={triangle} />
-        <IonLabel>Tab 1</IonLabel>
-      </IonTabButton>
-      <IonTabButton tab="tab2" href="/tab2">
-        <IonIcon aria-hidden="true" icon={ellipse} />
-        <IonLabel>Tab 2</IonLabel>
-      </IonTabButton>
-      <IonTabButton tab="tab3" href="/tab3">
-        <IonIcon aria-hidden="true" icon={square} />
-        <IonLabel>Tab 3</IonLabel>
-      </IonTabButton>
-    </IonTabBar>
-  </IonTabs>
-</IonReactRouter>
-  </IonApp>
-);
-=======
 // Create a separate component that has access to history
 const NotificationHandler: React.FC = () => {
   const history = useHistory();
   useEffect(() => {
     let notificationTapHandle: PluginListenerHandle | null = null;
     let messageListenerCleanup: (() => void) | null = null;
->>>>>>> b004d3c70847d7957afd25c7a9af151405b5e9d1
 
     const setupNotificationListeners = async () => {
       try {
