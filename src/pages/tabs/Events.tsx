@@ -1,130 +1,32 @@
-/* import React, { useState, useEffect } from "react";
-import {
-  IonContent,
-  IonHeader,
-  IonPage,
-  IonTitle,
-  IonToolbar,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonButton,
-  IonActionSheet,
-  IonButtons,
-  IonCardContent,
-} from "@ionic/react";
-import "./Events.css";
-import UserProfileDropdown from "@/components/UserProfileDropdown";
-import { useAuth } from "@/hooks/useAuth";
+// src/pages/tabs/Events.tsx
 
-const Events: React.FC = () => {
-  const { user } = useAuth();
-  const [showActionSheet, setShowActionSheet] = React.useState(false);
-
-  const actionSheetButtons = [
-    {
-      text: "Absagen",
-      role: "destructive",
-      handler: () => {
-        console.log("Absage geschickt");
-      },
-    },
-    {
-      text: "Nachricht senden",
-      handler: () => {
-        console.log("Nachricht gesendet");
-      },
-    },
-    {
-      text: "Abbrechen",
-      role: "cancel",
-    },
-  ];
-
-  // Beispiel-Daten für nächsten Termin
-  const nextEvent = {
-    date: "Freitag, 26. April 2025",
-    time: "19:00 Uhr",
-    host: "Lisa Müller",
-    location: "Musterstraße 12, 12345 Beispielstadt",
-  };
-
-  return (
-    <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonTitle>Spieltermine</IonTitle>
-          <IonButtons slot="end">
-            <UserProfileDropdown user={user} />
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <IonContent fullscreen className="ion-padding">
-        <div
-          className="center-horizontally"
-        >
-          <IonCard>
-            <IonCardHeader>
-              <IonCardSubtitle>Nächster Termin</IonCardSubtitle>
-              <IonCardTitle>
-                {nextEvent.date} – {nextEvent.time}
-              </IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <p>
-                <strong>Gastgeber:</strong> {nextEvent.host}
-              </p>
-              <p>
-                <strong>Adresse:</strong> {nextEvent.location}
-              </p>
-              <IonButton
-                expand="block"
-                onClick={() => setShowActionSheet(true)}
-              >
-                Ich komme zu spät
-              </IonButton>
-            </IonCardContent>
-          </IonCard>
-        </div>
-
-        <IonActionSheet
-          isOpen={showActionSheet}
-          onDidDismiss={() => setShowActionSheet(false)}
-          header="Aktion wählen"
-          buttons={actionSheetButtons}
-        />
-      </IonContent>
-    </IonPage>
-  );
-};
-
-export default Events; */
-
-// tabs/Events.tsx
 import React, { useEffect, useState } from "react";
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
-  IonContent, IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle,
-  IonCardContent, IonButton, IonModal, IonInput, IonLabel, IonItem,
-  IonList, IonToast, IonIcon, IonRefresher, IonRefresherContent, RefresherEventDetail
+  IonContent, IonRefresher, IonRefresherContent, IonCard,
+  IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent,
+  IonButton, IonModal, IonInput, IonLabel, IonItem, IonList,
+  IonToast, IonSelect, IonSelectOption, IonIcon, useIonViewWillEnter
 } from "@ionic/react";
-import { calendar, add } from "ionicons/icons";
-
+import { add } from "ionicons/icons";
 import { useAuth } from "@/hooks/useAuth";
 import UserProfileDropdown from "@/components/UserProfileDropdown";
-import { getAllEvents, createEvent } from "@/services/events";
-import { getUserGroups } from "@/services/groups";
-import { firestoreTimestampToDate } from "@/utils/timeFormatter";
+import { getAllGroups } from "@/services/groups";
+import { createEvent, getAllEvents } from "@/services/events";
+import { getUserById } from "@/services/users"; 
+import { firestoreTimestampToDate, dateToFirestoreTimestamp } from "@/utils/timeFormatter";
+import { GroupDoc, GroupEventDoc } from "@/interfaces/firestore";
 
-interface EventWithId {
+import "./Events.css";
+
+interface EventWithId extends GroupEventDoc {
   id: string;
   groupId: string;
-  date: string;
-  hostId: string;
-  location: string;
-  createdAt: any;
+  groupName?: string;
+  hostName?: string;
 }
+
+
 
 const Events: React.FC = () => {
   const { user } = useAuth();
@@ -136,18 +38,69 @@ const Events: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   // Form fields
+  const [name, setName] = useState("");
   const [date, setDate] = useState("");
   const [location, setLocation] = useState("");
   const [groupId, setGroupId] = useState("");
-  const [userGroups, setUserGroups] = useState<{ id: string; name: string }[]>([]);
+  const [allGroups, setAllGroups] = useState<{ id: string; name: string }[]>([]);
 
-  const fetchEvents = async () => {
+  useIonViewWillEnter(() => {
+    fetchEvents();
+    fetchGroups(); 
+  });
+
+  // Events laden
+const fetchEvents = async () => {
+  setLoading(true); // 👈 Ladeanzeige aktivieren
+  try {
+    const fetchedEvents = await getAllEvents();
+    const allGroups = await getAllGroups();
+
+    const groupNameMap = allGroups.reduce((acc, group) => {
+      acc[group.id] = group.name;
+      return acc;
+    }, {} as Record<string, string>);
+
+    const enrichedEvents = await Promise.all(
+      fetchedEvents.map(async (event) => {
+        const groupName = groupNameMap[event.groupId] || "Unbekannte Gruppe";
+        let hostName = event.host;
+        try {
+          const user = await getUserById(event.host);
+          if (user?.displayName) {
+            hostName = user.displayName;
+          }
+        } catch (err) {
+          console.warn("Fehler beim Laden des Host-Users:", err);
+        }
+
+        return {
+          ...event,
+          groupName,
+          hostName,
+        };
+      })
+    );
+
+    setEvents(enrichedEvents);
+  } catch (err) {
+    console.error(err);
+    setToastMessage("Fehler beim Laden der Termine");
+    setShowToast(true);
+  } finally {
+    setLoading(false); // 👈 Ladeanzeige deaktivieren
+  }
+};
+
+
+  // Gruppen laden
+  const fetchGroups = async () => {
     try {
-      const events = await getAllEvents();
-      setEvents(events);
+      const groups = await getAllGroups();
+      setAllGroups(groups.map((group) => ({ id: group.id, name: group.name })));
     } catch (err) {
       console.error(err);
-      setToastMessage("Fehler beim Laden der Termine");
+      setToastMessage("Fehler beim Laden der Gruppen");
       setShowToast(true);
     }
   };
@@ -155,10 +108,7 @@ const Events: React.FC = () => {
   const loadInitialData = async () => {
     setLoading(true);
     await fetchEvents();
-    if (user) {
-      const groups = await getUserGroups(user.uid);
-      setUserGroups(groups.map((g) => ({ id: g.id, name: g.name })));
-    }
+    await fetchGroups();
     setLoading(false);
   };
 
@@ -166,36 +116,42 @@ const Events: React.FC = () => {
     loadInitialData();
   }, [user]);
 
-  const handleRefresh = async (event: CustomEvent<RefresherEventDetail>) => {
+  const handleRefresh = async (event: CustomEvent) => {
     await fetchEvents();
     event.detail.complete();
   };
 
-  const handleSubmit = async () => {
-    if (!user || !date || !location || !groupId) {
-      setToastMessage("Bitte alle Felder ausfüllen.");
-      setShowToast(true);
-      return;
-    }
+const handleSubmit = async () => {
+  if (!user || !name || !date || !location || !groupId) {
+    setToastMessage("Bitte alle Felder ausfüllen.");
+    setShowToast(true);
+    return;
+  }
 
-    try {
-      await createEvent({
-        groupId,
-        date,
-        location,
-        hostId: user.uid,
-        createdAt: new Date().toISOString(),
-      });
-      setToastMessage("Termin erstellt!");
-      setShowModal(false);
-      await fetchEvents();
-    } catch (err) {
-      console.error(err);
-      setToastMessage("Fehler beim Erstellen");
-    } finally {
-      setShowToast(true);
-    }
+  const parsedDate = new Date(date);
+
+  const newEvent: Omit<GroupEventDoc, "host"> = {
+    name,
+    datetime: dateToFirestoreTimestamp(parsedDate),
+    location,
+    createdAt: dateToFirestoreTimestamp(new Date()),
+    gameSuggestions: [],
+    participantIds: [user.uid]
   };
+
+  try {
+    await createEvent(groupId, newEvent); // Event wird erstellt
+    await fetchEvents();                  // Events neu laden
+    setToastMessage("Termin erfolgreich erstellt!");
+    setShowModal(false);
+  } catch (error) {
+    console.error(error);
+    setToastMessage("Fehler beim Erstellen des Termins");
+  } finally {
+    setShowToast(true);
+  }
+};
+
 
   return (
     <IonPage>
@@ -213,34 +169,44 @@ const Events: React.FC = () => {
           <IonRefresherContent />
         </IonRefresher>
 
-        {!loading && events.length > 0 ? (
-          events.map((event) => (
-            <IonCard key={event.id}>
-              <IonCardHeader>
-                <IonCardSubtitle>
-                  {new Date(event.date).toLocaleString("de-DE")}
-                </IonCardSubtitle>
-                <IonCardTitle>📍 {event.location}</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                Gastgeber: {event.hostId}
-                {/* Optional: mehr Infos anzeigen */}
-              </IonCardContent>
-            </IonCard>
-          ))
-        ) : (
-          <p className="ion-text-center">Noch keine Termine vorhanden.</p>
+      {!loading && events.length > 0 ? (
+        events.map((event) => (
+          <IonCard
+            key={event.id}
+            routerLink={`/groups/${event.groupId}/events/${event.id}`}
+            button
+          >
+            <IonCardHeader>
+              <IonCardSubtitle>
+                {firestoreTimestampToDate(event.createdAt).toLocaleString("de-DE")}
+              </IonCardSubtitle>
+              <IonCardTitle>{event.name}</IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <p><strong>Gruppe:</strong> {event.groupName || "Unbekannte Gruppe"}</p>
+              <p><strong>Datum:</strong> {firestoreTimestampToDate(event.datetime).toLocaleString("de-DE")}</p>
+              <p><strong>Ort:</strong> {event.location}</p>
+              <p><strong>Gastgeber:</strong> {event.hostName || event.host}</p>  {/* Fallback auf UID */}
+            </IonCardContent>
+          </IonCard>
+        ))
+      ) : (
+        <p className="ion-text-center">Noch keine Termine vorhanden.</p>
+      )}
+
+
+        {user && (
+          <IonButton expand="block" onClick={() => setShowModal(true)}>
+            <IonIcon icon={add} slot="start" />
+            Neuen Termin erstellen
+          </IonButton>
         )}
 
-        <IonButton expand="block" onClick={() => setShowModal(true)}>
-          <IonIcon icon={add} slot="start" /> Neuen Termin erstellen
-        </IonButton>
-
-        {/* Modal zum Erstellen */}
+        {/* Modal für neuen Termin */}
         <IonModal isOpen={showModal} onDidDismiss={() => setShowModal(false)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Neuen Termin erstellen</IonTitle>
+              <IonTitle>Neuer Spieltermin</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setShowModal(false)}>Abbrechen</IonButton>
               </IonButtons>
@@ -248,6 +214,10 @@ const Events: React.FC = () => {
           </IonHeader>
           <IonContent>
             <IonList>
+              <IonItem>
+                <IonLabel position="stacked">Name des Events</IonLabel>
+                <IonInput value={name} onIonChange={(e) => setName(e.detail.value!)} />
+              </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Datum & Uhrzeit</IonLabel>
                 <IonInput type="datetime-local" value={date} onIonChange={(e) => setDate(e.detail.value!)} />
@@ -258,16 +228,20 @@ const Events: React.FC = () => {
               </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Gruppe</IonLabel>
-                <select value={groupId} onChange={(e) => setGroupId(e.target.value)}>
-                  <option value="">Bitte wählen</option>
-                  {userGroups.map((group) => (
-                    <option key={group.id} value={group.id}>{group.name}</option>
+                <IonSelect value={groupId} onIonChange={(e) => setGroupId(e.detail.value)}>
+                  <IonSelectOption value="">Bitte wählen</IonSelectOption>
+                  {allGroups.map((group) => (
+                    <IonSelectOption key={group.id} value={group.id}>
+                      {group.name}
+                    </IonSelectOption>
                   ))}
-                </select>
+                </IonSelect>
               </IonItem>
             </IonList>
             <div className="ion-padding">
-              <IonButton expand="block" onClick={handleSubmit}>Termin erstellen</IonButton>
+              <IonButton expand="block" onClick={handleSubmit}>
+                Termin erstellen
+              </IonButton>
             </div>
           </IonContent>
         </IonModal>
