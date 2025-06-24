@@ -51,7 +51,7 @@ const Events: React.FC = () => {
 
   // Events laden
 const fetchEvents = async () => {
-  setLoading(true); // 👈 Ladeanzeige aktivieren
+  setLoading(true); 
   try {
     const fetchedEvents = await getAllEvents();
     const allGroups = await getAllGroups();
@@ -88,7 +88,7 @@ const fetchEvents = async () => {
     setToastMessage("Fehler beim Laden der Termine");
     setShowToast(true);
   } finally {
-    setLoading(false); // 👈 Ladeanzeige deaktivieren
+    setLoading(false); 
   }
 };
 
