@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
-  IonContent, IonRefresher, IonRefresherContent, IonCard,
+  IonContent, IonRefresher, IonRefresherContent, IonCard, 
   IonCardHeader, IonCardTitle, IonCardSubtitle, IonCardContent,
   IonButton, IonModal, IonInput, IonLabel, IonItem, IonList,
   IonToast, IonSelect, IonSelectOption, IonIcon, useIonViewWillEnter
@@ -16,6 +16,8 @@ import { createEvent, getAllEvents } from "@/services/events";
 import { getUserById } from "@/services/users"; 
 import { firestoreTimestampToDate, dateToFirestoreTimestamp } from "@/utils/timeFormatter";
 import { GroupDoc, GroupEventDoc } from "@/interfaces/firestore";
+
+import { calendarOutline } from "ionicons/icons";
 
 import "./Events.css";
 
@@ -170,29 +172,40 @@ const handleSubmit = async () => {
         </IonRefresher>
 
       {!loading && events.length > 0 ? (
-        events.map((event) => (
-          <IonCard
-            key={event.id}
-            routerLink={`/groups/${event.groupId}/events/${event.id}`}
-            button
-          >
-            <IonCardHeader>
-              <IonCardSubtitle>
-                {firestoreTimestampToDate(event.createdAt).toLocaleString("de-DE")}
-              </IonCardSubtitle>
-              <IonCardTitle>{event.name}</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <p><strong>Gruppe:</strong> {event.groupName || "Unbekannte Gruppe"}</p>
-              <p><strong>Datum:</strong> {firestoreTimestampToDate(event.datetime).toLocaleString("de-DE")}</p>
-              <p><strong>Ort:</strong> {event.location}</p>
-              <p><strong>Gastgeber:</strong> {event.hostName || event.host}</p>  {/* Fallback auf UID */}
-            </IonCardContent>
-          </IonCard>
-        ))
+        <div className="events-list">
+          {events.map((event) => (
+            <IonCard
+              key={event.id}
+              className="event-card"
+              routerLink={`/groups/${event.groupId}/events/${event.id}`}
+              button
+            >
+              <div className="event-card-header">
+                <h2 className="event-card-title">{event.name}</h2>
+                <p className="event-card-subtitle">{event.groupName || "Unbekannte Gruppe"}</p>
+              </div>
+              <IonCardContent className="event-card-content">
+                <p className="event-info">
+                  <strong>Datum:</strong> {firestoreTimestampToDate(event.datetime).toLocaleString("de-DE")}
+                </p>
+                <p className="event-info">
+                  <strong>Ort:</strong> {event.location}
+                </p>
+                <p className="event-info">
+                  <strong>Gastgeber:</strong> {event.hostName || event.host}
+                </p>
+              </IonCardContent>
+            </IonCard>
+          ))}
+        </div>
       ) : (
-        <p className="ion-text-center">Noch keine Termine vorhanden.</p>
+        <div className="empty-events-container">
+          <IonIcon icon={calendarOutline} className="empty-icon" />
+          <h2>Keine Termine</h2>
+          <p>Du kannst jetzt einen neuen Spieltermin anlegen.</p>
+        </div>
       )}
+
 
 
         {user && (
