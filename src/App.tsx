@@ -18,6 +18,7 @@ import {
 } from "ionicons/icons";
 
 import Events from "./pages/tabs/Events";
+import EventDetails from "./pages/tabs/EventDetails";
 import Groups from "./pages/tabs/Groups";
 import ChatsList from "./pages/tabs/ChatsList";
 import Login from "./pages/auth/Login";
@@ -25,6 +26,7 @@ import Signup from "./pages/auth/Signup";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import { AuthProvider } from "./context/AuthContext";
 import ChatView from "./pages/chat/ChatView";
+import GroupDetails from "./pages/tabs/GroupDetails";
 
 import "@ionic/react/css/core.css";
 import "@ionic/react/css/normalize.css";
@@ -139,8 +141,14 @@ const App: React.FC = () => {
                     <Route path="/events" exact>
                       <Events />
                     </Route>
+                    <Route path="/groups/:groupId/events/:eventId" exact>
+                     <EventDetails />
+                    </Route>
                     <Route path="/groups" exact>
                       <Groups />
+                    </Route>
+                    <Route path="/groups/:groupId" exact>
+                      <GroupDetails />
                     </Route>
                     <Route path="/chats" exact>
                       <ChatsList />
@@ -158,7 +166,13 @@ const App: React.FC = () => {
                       <IonIcon icon={calendarOutline} />
                       <IonLabel>Termine</IonLabel>
                     </IonTabButton>
-                    <IonTabButton tab="groups" href="/groups">
+                    <IonTabButton
+                      tab="groups"
+                      href="/groups"
+                      onClick={() => {
+                        window.location.href = "/groups"; // ⬅️ Erzwingt Navigation zur Gruppenübersicht
+                      }}
+                    >
                       <IonIcon icon={peopleOutline} />
                       <IonLabel>Gruppen</IonLabel>
                     </IonTabButton>

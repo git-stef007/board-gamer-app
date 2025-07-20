@@ -63,7 +63,7 @@ export interface GroupEventDoc {
   host: string; // userId of host
   gameSuggestions: GameSuggestion[];
   participantIds: string[]; // userIds of participants
-  ratings: {
+  ratings?: {
     [userId: string]: EventRating;
   };
 }
@@ -87,3 +87,14 @@ export interface EventRating {
   food: number;    // 1-5
   general: number; // 1-5
 }
+
+
+
+// export interface EventDoc {
+//   name: string;
+//   datetime: FirestoreTimestamp;
+//   location: string;
+//   host: string;
+//   createdAt: FirestoreTimestamp;
+//   participants: string[];
+// }
