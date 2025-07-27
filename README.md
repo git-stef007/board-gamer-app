@@ -6,12 +6,7 @@ A mobile app for organizing board game events for groups of players, including g
 
 Built with Ionic + Capacitor and TypeScript React for Frontend, Firebase with Authentication, Firestore, Functions and Messaging/FCM for Backend.
 
-## Runbook
-
-- **iOS**: `npm install && npx cap open ios` -> Run on simulator or physical device
-- **Android**: `npm install && npx cap open android` -> Run on emulator or physical device
-
-### Firebase Setup
+## Firebase Setup
 
 - `Authentication`, `Firestore` and `Messaging` need to be enabled in the Firebase Web Console (functions requires the Blaze pay-as-you-go plan to be activated, this is required for FCM push notifications to be triggered)
 - **iOS**: `GoogleService-Info.plist` needs to be downloaded from the Firebase Web Console and placed under `ios/App/App` in Xcode
@@ -21,7 +16,13 @@ Built with Ionic + Capacitor and TypeScript React for Frontend, Firebase with Au
 
 ## Build Guide
 
+0. Run `npm install` to install the dependencies.
 1. Run `ionic build` to generate the web assets.
 2. Run `npx cap sync` to copy web assets and update native plugins.
 3. Use `npx cap open ios` or `npx cap open android` to open the project in Xcode or Android Studio.
 4. Build and run the app on a real device or emulator.
+
+## Runbook
+
+- **iOS**: `npm install && npx cap open ios` -> Run on simulator or physical device
+- **Android**: `npm install && npx cap open android` -> Run on emulator or physical device
