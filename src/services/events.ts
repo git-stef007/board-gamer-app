@@ -1,7 +1,7 @@
 import { FirebaseFirestore } from "@capacitor-firebase/firestore";
 import { COLLECTIONS } from "@/constants/firebase";
-import { GroupEventDoc } from "@/interfaces/firestore";
-import { dateToFirestoreTimestamp } from "@/utils/timeFormatter";
+import { GroupEventDoc, GameSuggestion } from "@/interfaces/firestore";
+import { dateToFirestoreTimestamp, firestoreTimestampToDate } from "@/utils/timeFormatter";
 import { getGroupById } from "./groups";
 
 /**
@@ -145,5 +145,85 @@ export const updateEvent = async (
 export const deleteEvent = async (groupId: string, eventId: string): Promise<void> => {
   await FirebaseFirestore.deleteDocument({
     reference: `${COLLECTIONS.GROUPS}/${groupId}/events/${eventId}`
+  });
+};
+
+/**
+ * Suggest a game for an event
+ */
+export const suggestGame = async (
+  groupId: string,
+  eventId: string,
+  userId: string,
+  gameName: string,
+  description?: string
+) => {
+  const eventRef = `${COLLECTIONS.GROUPS}/${groupId}/events/${eventId}`;
+  const result = await FirebaseFirestore.getDocument({ reference: eventRef });
+  const event = result.snapshot?.data as GroupEventDoc;
+
+  console.log("Event: " + JSON.stringify(event, null, 2));
+  console.log("eventRef:", eventRef);
+
+
+  if (!event || !event.datetime || !Array.isArray(event.gameSuggestions)) {
+    throw new Error("Fehlerhafte Eventdaten – bitte aktualisieren und erneut versuchen.");
+  }
+
+  if (firestoreTimestampToDate(event.datetime) < new Date()) {
+    throw new Error("Spielvorschläge sind nur für zukünftige Spieltermine möglich.");
+  }
+
+  const alreadyExists = event.gameSuggestions.some(
+    g => g.name.toLowerCase() === gameName.toLowerCase()
+  );
+  if (alreadyExists) {
+    throw new Error("Dieses Spiel wurde bereits vorgeschlagen.");
+  }
+
+  const newGame: GameSuggestion = {
+    name: gameName,
+    createdBy: userId,
+    createdAt: dateToFirestoreTimestamp(new Date()),
+    description,
+    voterIds: []
+  };
+
+  const updatedSuggestions = [...event.gameSuggestions, newGame];
+
+  await FirebaseFirestore.updateDocument({
+    reference: eventRef,
+    data: { gameSuggestions: updatedSuggestions }
+  });
+};
+
+/**
+ * Vote for a game suggestion in an event
+ */
+export const voteForGame = async (
+  groupId: string,
+  eventId: string,
+  userId: string,
+  gameName: string
+) => {
+  const eventRef = `${COLLECTIONS.GROUPS}/${groupId}/events/${eventId}`;
+  const result = await FirebaseFirestore.getDocument({ reference: eventRef });
+  const event = result.snapshot?.data as GroupEventDoc;
+
+  if (firestoreTimestampToDate(event.datetime) < new Date()) {
+    throw new Error("Spielabstimmung ist nur für zukünftige Spieltermine möglich.");
+  }
+
+  const updatedSuggestions = event.gameSuggestions.map((game) => {
+    if (game.name.toLowerCase() === gameName.toLowerCase()) {
+      if (game.voterIds.includes(userId)) return game;
+      return { ...game, voterIds: [...game.voterIds, userId] };
+    }
+    return game;
+  });
+
+  await FirebaseFirestore.updateDocument({
+    reference: eventRef,
+    data: { gameSuggestions: updatedSuggestions }
   });
 };

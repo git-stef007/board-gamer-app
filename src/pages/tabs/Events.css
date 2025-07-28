@@ -24,10 +24,31 @@
 
 /* Karten-Header für Events */
 .event-card-header {
-  background: linear-gradient(135deg, #4a90e2, #50e3c2);
+  height: 120px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--ion-color-light);
+}
+
+.event-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.default-event-image {
+  width: 100%;
+  height: 100%;
+  border-radius: 0 !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 3rem;
   color: white;
-  padding: 16px;
-  border-radius: 8px 8px 0 0;
+  background: linear-gradient(90deg, #ff8a00, #e52e71); /* fallback */
+  flex-shrink: 0;
 }
 
 .event-card-title {

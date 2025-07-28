@@ -22,6 +22,7 @@ export interface UserDoc {
 // Group Document (/groups/{groupId})
 // ======================
 export interface GroupDoc {
+  id?: string;
   name: string;
   memberIds: string[]; // userIds of group members
   description?: string;
@@ -58,7 +59,7 @@ export interface GroupEventDoc {
   name: string;
   description?: string;
   createdAt: FirestoreTimestamp;
-  datetime: Date;
+  datetime: FirestoreTimestamp;
   location?: string;
   host: string; // userId of host
   gameSuggestions: GameSuggestion[];

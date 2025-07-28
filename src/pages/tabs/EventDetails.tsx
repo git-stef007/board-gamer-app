@@ -32,9 +32,12 @@ import {
   getGroupEvents,
   deleteEvent,
   updateEvent,
+  suggestGame,
+  voteForGame,
 } from "@/services/events";
 import { GroupEventDoc } from "@/interfaces/firestore";
 import { trash, create } from "ionicons/icons";
+import "./EventDetails.css";
 
 interface RouteParams {
   groupId: string;
@@ -46,55 +49,51 @@ const EventDetails: React.FC = () => {
   const history = useHistory();
   const { user } = useAuth();
 
-  const [event, setEvent] = useState<(GroupEventDoc & { id: string }) | null>(null);
+  const [event, setEvent] = useState<(GroupEventDoc & { id: string }) | null>(
+    null
+  );
   const [showEdit, setShowEdit] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [suggestionInProgress, setSuggestionInProgress] = useState(false);
+  const [showSuggestAlert, setShowSuggestAlert] = useState(false);
 
-  // Editierbare Felder
-  const [name, setName] = useState("");
-  const [location, setLocation] = useState("");
-  const [datetime, setDatetime] = useState("");
+  const fetchEvent = async () => {
+    setLoading(true);
+    try {
+      const events = await getGroupEvents(groupId);
+      const current = events.find((e) => e.id === eventId);
+      if (current) {
+        setEvent(current);
+      }
+    } catch (err) {
+      console.error("Fehler beim Laden des Events", err);
+      setToastMessage("Fehler beim Laden");
+      setShowToast(true);
+    }
+    setLoading(false);
+  };
 
   useEffect(() => {
-    const loadEvent = async () => {
-      setLoading(true);
-      try {
-        const events = await getGroupEvents(groupId);
-        const current = events.find((e) => e.id === eventId);
-        if (current) {
-          setEvent(current);
-          setName(current.name);
-          setLocation(current.location || "");
-          setDatetime(firestoreTimestampToDate(current.datetime).toISOString().slice(0, 16));
-        }
-      } catch (err) {
-        console.error("Fehler beim Laden des Events", err);
-        setToastMessage("Fehler beim Laden");
-        setShowToast(true);
-      }
-      setLoading(false);
-    };
-
-    loadEvent();
+    fetchEvent();
   }, [groupId, eventId]);
 
   const handleSave = async () => {
-    if (!event || !name || !datetime) return;
+    if (!event || !event.name || !event.datetime) return;
 
     try {
       await updateEvent(groupId, eventId, {
-        name,
-        location,
-        datetime: new Date(datetime),
+        name: event.name,
+        location: event.location,
+        datetime: event.datetime,
       });
 
       setToastMessage("Event aktualisiert");
       setShowToast(true);
       setShowEdit(false);
-      history.replace("/events");
+      fetchEvent();
     } catch (err) {
       console.error(err);
       setToastMessage("Aktualisierung fehlgeschlagen");
@@ -115,8 +114,58 @@ const EventDetails: React.FC = () => {
     }
   };
 
-  if (loading || !event)
-    return <IonLoading isOpen={true} message="Lädt..." />;
+  const handleSuggestSubmit = async (nameInput: string) => {
+    const name = (nameInput ?? "").trim();
+    if (!name) {
+      setToastMessage("Spielname erforderlich");
+      setShowToast(true);
+      return false;
+    }
+
+    try {
+      setSuggestionInProgress(true);
+      await suggestGame(groupId, eventId, user!.uid, name);
+
+      // Lokales Update statt fetchEvent()
+      const newSuggestion = {
+        name,
+        createdBy: user!.uid,
+        createdAt: dateToFirestoreTimestamp(new Date()),
+        description: undefined,
+        voterIds: [],
+      };
+
+      setEvent((prev) =>
+        prev
+          ? {
+              ...prev,
+              gameSuggestions: [...prev.gameSuggestions, newSuggestion],
+            }
+          : prev
+      );
+
+      setToastMessage("Spiel vorgeschlagen");
+    } catch (err: any) {
+      console.error("Fehler beim Vorschlagen:", err?.message ?? err);
+      setToastMessage(
+        "Fehler beim Vorschlagen: " + (err?.message || "Unbekannt")
+      );
+    } finally {
+      setSuggestionInProgress(false);
+      setShowSuggestAlert(false);
+      setShowToast(true);
+    }
+  };
+
+  if (loading || !event) return <IonLoading isOpen={true} message="Lädt..." />;
+
+  const isPast =
+    !!event?.datetime &&
+    new Date(firestoreTimestampToDate(event.datetime)) < new Date();
+
+  const sortedSuggestions = [...(event.gameSuggestions || [])].sort(
+    (a, b) => b.voterIds.length - a.voterIds.length
+  );
 
   return (
     <IonPage>
@@ -142,13 +191,134 @@ const EventDetails: React.FC = () => {
             </IonCardSubtitle>
           </IonCardHeader>
           <IonCardContent>
-            <p><strong>Ort:</strong> {event.location || "–"}</p>
-            <p><strong>Gastgeber:</strong> {event.host}</p>
-            <p><strong>Teilnehmer:</strong> {event.participantIds?.length}</p>
+            <p>
+              <strong>Ort:</strong> {event.location || "–"}
+            </p>
+            <p>
+              <strong>Gastgeber:</strong> {event.host}
+            </p>
+            <p>
+              <strong>Teilnehmer:</strong> {event.participantIds?.length}
+            </p>
           </IonCardContent>
         </IonCard>
 
-        {/* Edit Modal */}
+        {!isPast && (
+          <IonCard>
+            <IonCardHeader>
+              <IonCardTitle>Spielvorschläge</IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <IonButton
+                expand="block"
+                onClick={() => setShowSuggestAlert(true)}
+                disabled={suggestionInProgress}
+              >
+                Neues Spiel vorschlagen
+              </IonButton>
+              {sortedSuggestions.length > 0 ? (
+                <IonList className="suggestion-list">
+                  {sortedSuggestions.map((game) => {
+                    const voted = game.voterIds.includes(user?.uid || "");
+                    return (
+                      <IonItem key={game.name}>
+                        <div className="vote-row">
+                          <button
+                            className={`vote-button ${voted ? "voted" : ""}`}
+                            disabled={voted}
+                            onClick={async () => {
+                              try {
+                                await voteForGame(
+                                  groupId,
+                                  eventId,
+                                  user!.uid,
+                                  game.name
+                                );
+
+                                // Update only the local state
+                                setEvent((prev) => {
+                                  if (!prev) return prev;
+
+                                  const updatedSuggestions =
+                                    prev.gameSuggestions.map((g) =>
+                                      g.name === game.name
+                                        ? {
+                                            ...g,
+                                            voterIds: [
+                                              ...g.voterIds,
+                                              user!.uid,
+                                            ],
+                                          }
+                                        : g
+                                    );
+
+                                  return {
+                                    ...prev,
+                                    gameSuggestions: updatedSuggestions,
+                                  };
+                                });
+
+                                setToastMessage("Abgestimmt!");
+                              } catch (err) {
+                                setToastMessage("Fehler beim Abstimmen");
+                                console.error(err);
+                              } finally {
+                                setShowToast(true);
+                              }
+                            }}
+                          />
+                          <div className="vote-info">
+                            <strong>{game.name}</strong>
+                            <progress
+                              max={event.participantIds.length}
+                              value={game.voterIds.length}
+                            ></progress>
+                            <span>{game.voterIds.length} Stimme(n)</span>
+                          </div>
+                        </div>
+                      </IonItem>
+                    );
+                  })}
+                </IonList>
+              ) : (
+                <p>Noch keine Vorschläge vorhanden.</p>
+              )}
+            </IonCardContent>
+          </IonCard>
+        )}
+
+        <IonAlert
+          isOpen={showSuggestAlert}
+          onDidDismiss={() => setShowSuggestAlert(false)}
+          header="Spiel vorschlagen"
+          inputs={[
+            {
+              name: "gameName",
+              type: "text",
+              placeholder: "Spielname",
+            },
+          ]}
+          buttons={[
+            {
+              text: "Abbrechen",
+              role: "cancel",
+            },
+            {
+              text: "Vorschlagen",
+              handler: (data) => {
+                const name = (data?.gameName ?? "").trim();
+                if (!name) {
+                  setToastMessage("Spielname erforderlich");
+                  setShowToast(true);
+                  return false; // keeps alert open
+                }
+                handleSuggestSubmit(name);
+                return true;
+              },
+            },
+          ]}
+        />
+
         <IonModal isOpen={showEdit} onDidDismiss={() => setShowEdit(false)}>
           <IonHeader>
             <IonToolbar>
@@ -160,23 +330,36 @@ const EventDetails: React.FC = () => {
               <IonItem>
                 <IonLabel position="stacked">Name</IonLabel>
                 <IonInput
-                  value={name}
-                  onIonInput={(e) => setName(e.detail.value!)}
+                  value={event.name}
+                  onIonInput={(e) =>
+                    setEvent({ ...event, name: e.detail.value! })
+                  }
                 />
               </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Ort</IonLabel>
                 <IonInput
-                  value={location}
-                  onIonInput={(e) => setLocation(e.detail.value!)}
+                  value={event.location}
+                  onIonInput={(e) =>
+                    setEvent({ ...event, location: e.detail.value! })
+                  }
                 />
               </IonItem>
               <IonItem>
                 <IonLabel position="stacked">Datum & Zeit</IonLabel>
                 <IonInput
                   type="datetime-local"
-                  value={datetime}
-                  onIonChange={(e) => setDatetime(e.detail.value!)}
+                  value={firestoreTimestampToDate(event.datetime)
+                    .toISOString()
+                    .slice(0, 16)}
+                  onIonChange={(e) =>
+                    setEvent({
+                      ...event,
+                      datetime: dateToFirestoreTimestamp(
+                        new Date(e.detail.value!)
+                      ),
+                    })
+                  }
                 />
               </IonItem>
             </IonList>
@@ -184,7 +367,11 @@ const EventDetails: React.FC = () => {
               <IonButton expand="block" onClick={handleSave}>
                 Speichern
               </IonButton>
-              <IonButton expand="block" color="medium" onClick={() => setShowEdit(false)}>
+              <IonButton
+                expand="block"
+                color="medium"
+                onClick={() => setShowEdit(false)}
+              >
                 Abbrechen
               </IonButton>
             </div>

@@ -1,0 +1,33 @@
+.vote-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.vote-button {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--ion-color-medium);
+  background: transparent;
+  cursor: pointer;
+}
+
+.vote-button.voted {
+  background: var(--ion-color-primary);
+  border-color: var(--ion-color-primary);
+  cursor: default;
+}
+
+.vote-info {
+  flex: 1;
+}
+
+.vote-info progress {
+  display: block;
+  width: 100%;
+  height: 8px;
+  margin: 4px 0;
+  accent-color: var(--ion-color-primary);
+}
