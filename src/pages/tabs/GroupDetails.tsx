@@ -11,6 +11,7 @@ import { getGroupById, updateGroup } from "@/services/groups";
 import { getGroupEvents } from "@/services/events";
 import { firestoreTimestampToDate } from "@/utils/timeFormatter";
 import { GroupDoc, GroupEventDoc } from "@/interfaces/firestore";
+import { getUserById } from "@/services/users";
 
 interface RouteParams {
   groupId: string;
@@ -24,11 +25,17 @@ interface EventWithId extends GroupEventDoc {
   id: string;
 }
 
+interface MemberWithName {
+  id: string;
+  displayName: string;
+}
+
 const GroupDetails: React.FC = () => {
   const { groupId } = useParams<RouteParams>();
 
   const [group, setGroup] = useState<GroupWithId | null>(null);
   const [events, setEvents] = useState<EventWithId[]>([]);
+  const [members, setMembers] = useState<MemberWithName[]>([]);
   const [loading, setLoading] = useState(true);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
@@ -46,6 +53,23 @@ const GroupDetails: React.FC = () => {
       if (groupData) {
         setGroup(groupData);
         setEditedGroupName(groupData.name);
+        
+        // Fetch member display names
+        const memberPromises = groupData.memberIds.map(async (memberId) => {
+          let displayName = memberId; // fallback to ID
+          try {
+            const user = await getUserById(memberId);
+            if (user?.displayName) {
+              displayName = user.displayName;
+            }
+          } catch (err) {
+            console.warn("Fehler beim Laden des Members:", err);
+          }
+          return { id: memberId, displayName };
+        });
+        
+        const membersWithNames = await Promise.all(memberPromises);
+        setMembers(membersWithNames);
       }
       const eventData = await getGroupEvents(groupId);
       setEvents(eventData);
@@ -105,9 +129,9 @@ const GroupDetails: React.FC = () => {
               </IonCardHeader>
               <IonCardContent>
                 <IonList>
-                  {group.memberIds.map((memberName, index) => (
-                    <IonItem key={index}>
-                      <IonLabel>{memberName}</IonLabel>
+                  {members.map((member) => (
+                    <IonItem key={member.id}>
+                      <IonLabel>{member.displayName}</IonLabel>
                     </IonItem>
                   ))}
                 </IonList>

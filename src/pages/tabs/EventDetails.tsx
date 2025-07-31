@@ -16,6 +16,7 @@ import {
 import { GroupEventDoc, EventRating } from "@/interfaces/firestore";
 import { trash, create } from "ionicons/icons";
 import "./EventDetails.css";
+import { getUserById } from "@/services/users";
 
 interface RouteParams {
   groupId: string;
@@ -35,6 +36,7 @@ const EventDetails: React.FC = () => {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [suggestionInProgress, setSuggestionInProgress] = useState(false);
   const [showSuggestAlert, setShowSuggestAlert] = useState(false);
+  const [hostName, setHostName] = useState<string | null>(null);
 
   const [userRating, setUserRating] = useState<EventRating>({ host: 0, food: 0, general: 0 });
   const [isSubmittingRating, setIsSubmittingRating] = useState(false);
@@ -46,6 +48,18 @@ const EventDetails: React.FC = () => {
       const current = events.find((e) => e.id === eventId);
       if (current) {
         setEvent(current);
+
+        // Fetch host display name
+        let hostDisplayName = current.host;
+        try {
+          const hostUser = await getUserById(current.host);
+          if (hostUser?.displayName) {
+            hostDisplayName = hostUser.displayName;
+          }
+        } catch (err) {
+          console.warn("Fehler beim Laden des Host-Users:", err);
+        }
+        setHostName(hostDisplayName);
 
         if (user && current.ratings?.[user.uid]) {
           setUserRating(current.ratings[user.uid]);
@@ -204,7 +218,7 @@ const handleSuggestSubmit = async (nameInput: string) => {
               <strong>Ort:</strong> {event.location || "–"}
             </p>
             <p>
-              <strong>Gastgeber:</strong> {event.host}
+              <strong>Gastgeber:</strong> {hostName}
             </p>
             <p>
               <strong>Teilnehmer:</strong> {event.participantIds?.length}
