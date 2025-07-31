@@ -1,41 +1,19 @@
 import React, { useEffect, useState } from "react";
 import {
-  IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
-  IonContent,
-  IonButton,
-  IonIcon,
-  IonCard,
-  IonCardHeader,
-  IonCardTitle,
-  IonCardSubtitle,
-  IonCardContent,
-  IonInput,
-  IonLabel,
-  IonItem,
-  IonList,
-  IonToast,
-  IonModal,
-  IonAlert,
-  IonLoading,
+  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonContent,
+  IonButton, IonIcon, IonCard, IonCardHeader, IonCardTitle, IonCardSubtitle,
+  IonCardContent, IonInput, IonLabel, IonItem, IonList, IonToast, IonModal,
+  IonAlert, IonLoading
 } from "@ionic/react";
 import { useParams, useHistory } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import {
-  firestoreTimestampToDate,
-  dateToFirestoreTimestamp,
+  firestoreTimestampToDate, dateToFirestoreTimestamp,
 } from "@/utils/timeFormatter";
 import {
-  getGroupEvents,
-  deleteEvent,
-  updateEvent,
-  suggestGame,
-  voteForGame,
+  getGroupEvents, deleteEvent, updateEvent, suggestGame, voteForGame,
 } from "@/services/events";
-import { GroupEventDoc } from "@/interfaces/firestore";
+import { GroupEventDoc, EventRating } from "@/interfaces/firestore";
 import { trash, create } from "ionicons/icons";
 import "./EventDetails.css";
 
@@ -49,9 +27,7 @@ const EventDetails: React.FC = () => {
   const history = useHistory();
   const { user } = useAuth();
 
-  const [event, setEvent] = useState<(GroupEventDoc & { id: string }) | null>(
-    null
-  );
+  const [event, setEvent] = useState<(GroupEventDoc & { id: string }) | null>(null);
   const [showEdit, setShowEdit] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
   const [showToast, setShowToast] = useState(false);
@@ -60,6 +36,9 @@ const EventDetails: React.FC = () => {
   const [suggestionInProgress, setSuggestionInProgress] = useState(false);
   const [showSuggestAlert, setShowSuggestAlert] = useState(false);
 
+  const [userRating, setUserRating] = useState<EventRating>({ host: 0, food: 0, general: 0 });
+  const [isSubmittingRating, setIsSubmittingRating] = useState(false);
+
   const fetchEvent = async () => {
     setLoading(true);
     try {
@@ -67,6 +46,10 @@ const EventDetails: React.FC = () => {
       const current = events.find((e) => e.id === eventId);
       if (current) {
         setEvent(current);
+
+        if (user && current.ratings?.[user.uid]) {
+          setUserRating(current.ratings[user.uid]);
+        }
       }
     } catch (err) {
       console.error("Fehler beim Laden des Events", err);
@@ -80,6 +63,29 @@ const EventDetails: React.FC = () => {
     fetchEvent();
   }, [groupId, eventId]);
 
+  const handleRatingSubmit = async () => {
+    if (!event || !user) return;
+    setIsSubmittingRating(true);
+
+    try {
+      const updatedRatings = {
+        ...(event.ratings || {}),
+        [user.uid]: userRating,
+      };
+
+      await updateEvent(groupId, eventId, { ratings: updatedRatings });
+
+      setEvent((prev) => prev ? { ...prev, ratings: updatedRatings } : prev);
+      setToastMessage("Bewertung gespeichert!");
+    } catch (err) {
+      console.error("Fehler beim Speichern der Bewertung:", err);
+      setToastMessage("Fehler beim Speichern");
+    } finally {
+      setShowToast(true);
+      setIsSubmittingRating(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!event || !event.name || !event.datetime) return;
 
@@ -91,12 +97,13 @@ const EventDetails: React.FC = () => {
       });
 
       setToastMessage("Event aktualisiert");
-      setShowToast(true);
+	  setShowToast(true);
       setShowEdit(false);
       fetchEvent();
     } catch (err) {
       console.error(err);
       setToastMessage("Aktualisierung fehlgeschlagen");
+    } finally {
       setShowToast(true);
     }
   };
@@ -105,16 +112,17 @@ const EventDetails: React.FC = () => {
     try {
       await deleteEvent(groupId, eventId);
       setToastMessage("Event gelöscht");
-      setShowToast(true);
+	  setShowToast(true);
       history.replace("/events");
     } catch (err) {
       console.error(err);
       setToastMessage("Fehler beim Löschen");
+    } finally {
       setShowToast(true);
     }
   };
 
-  const handleSuggestSubmit = async (nameInput: string) => {
+const handleSuggestSubmit = async (nameInput: string) => {
     const name = (nameInput ?? "").trim();
     if (!name) {
       setToastMessage("Spielname erforderlich");
@@ -182,6 +190,7 @@ const EventDetails: React.FC = () => {
           </IonButtons>
         </IonToolbar>
       </IonHeader>
+
       <IonContent>
         <IonCard>
           <IonCardHeader>
@@ -190,8 +199,8 @@ const EventDetails: React.FC = () => {
               {firestoreTimestampToDate(event.datetime).toLocaleString("de-DE")}
             </IonCardSubtitle>
           </IonCardHeader>
-          <IonCardContent>
-            <p>
+          <IonCardContent>            
+			<p>
               <strong>Ort:</strong> {event.location || "–"}
             </p>
             <p>
@@ -216,7 +225,7 @@ const EventDetails: React.FC = () => {
               >
                 Neues Spiel vorschlagen
               </IonButton>
-              {sortedSuggestions.length > 0 ? (
+             {sortedSuggestions.length > 0 ? (
                 <IonList className="suggestion-list">
                   {sortedSuggestions.map((game) => {
                     const voted = game.voterIds.includes(user?.uid || "");
@@ -286,8 +295,7 @@ const EventDetails: React.FC = () => {
             </IonCardContent>
           </IonCard>
         )}
-
-        <IonAlert
+		<IonAlert
           isOpen={showSuggestAlert}
           onDidDismiss={() => setShowSuggestAlert(false)}
           header="Spiel vorschlagen"
@@ -318,8 +326,8 @@ const EventDetails: React.FC = () => {
             },
           ]}
         />
-
-        <IonModal isOpen={showEdit} onDidDismiss={() => setShowEdit(false)}>
+		
+		        <IonModal isOpen={showEdit} onDidDismiss={() => setShowEdit(false)}>
           <IonHeader>
             <IonToolbar>
               <IonTitle>Event bearbeiten</IonTitle>
@@ -399,9 +407,51 @@ const EventDetails: React.FC = () => {
           ]}
           onDidDismiss={() => setConfirmDelete(false)}
         />
+
+        {isPast && (
+          <IonCard>
+            <IonCardHeader><IonCardTitle>Bewertung</IonCardTitle></IonCardHeader>
+            <IonCardContent>
+              <RatingCategory label="Gastgeber" value={userRating.host} onChange={(val) => setUserRating((prev) => ({ ...prev, host: val }))} />
+              <RatingCategory label="Essen & Snacks" value={userRating.food} onChange={(val) => setUserRating((prev) => ({ ...prev, food: val }))} />
+              <RatingCategory label="Allgemein" value={userRating.general} onChange={(val) => setUserRating((prev) => ({ ...prev, general: val }))} />
+              <IonButton expand="block" onClick={handleRatingSubmit} disabled={isSubmittingRating}>
+                Bewertung abschicken
+              </IonButton>
+            </IonCardContent>
+          </IonCard>
+        )}
+
+
       </IonContent>
     </IonPage>
   );
 };
 
 export default EventDetails;
+
+interface RatingCategoryProps {
+  label: string;
+  value: number;
+  onChange: (val: number) => void;
+}
+
+const RatingCategory: React.FC<RatingCategoryProps> = ({ label, value, onChange }) => {
+  return (
+    <div className="rating-category">
+      <IonLabel>{label}</IonLabel>
+      <div className="stars">
+        {[1, 2, 3, 4, 5].map((num) => (
+          <span
+            key={num}
+            className={num <= value ? "star filled" : "star"}
+            onClick={() => onChange(num)}
+            style={{ cursor: "pointer", fontSize: "1.5rem" }}
+          >
+            ★
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
