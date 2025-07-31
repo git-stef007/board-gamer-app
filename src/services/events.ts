@@ -3,6 +3,7 @@ import { COLLECTIONS } from "@/constants/firebase";
 import { GroupEventDoc, GameSuggestion } from "@/interfaces/firestore";
 import { dateToFirestoreTimestamp, firestoreTimestampToDate } from "@/utils/timeFormatter";
 import { getGroupById } from "./groups";
+import { EventRating } from "@/interfaces/firestore";
 
 /**
  * Create a new event inside a group
@@ -225,5 +226,40 @@ export const voteForGame = async (
   await FirebaseFirestore.updateDocument({
     reference: eventRef,
     data: { gameSuggestions: updatedSuggestions }
+  });
+};
+
+/**
+ * Submit or update a user rating (1–5) for a past event
+ */
+export const submitEventRating = async (
+  groupId: string,
+  eventId: string,
+  userId: string,
+  rating: EventRating
+): Promise<void> => {
+  const eventRef = `${COLLECTIONS.GROUPS}/${groupId}/events/${eventId}`;
+  const result = await FirebaseFirestore.getDocument({ reference: eventRef });
+  const event = result.snapshot?.data as GroupEventDoc;
+
+  if (!event) {
+    throw new Error("Event nicht gefunden.");
+  }
+
+  const eventDate = firestoreTimestampToDate(event.datetime);
+  if (eventDate >= new Date()) {
+    throw new Error("Bewertungen sind nur für vergangene Termine möglich.");
+  }
+
+  const existingRatings = event.ratings ?? {};
+
+  const updatedRatings = {
+    ...existingRatings,
+    [userId]: rating,
+  };
+
+  await FirebaseFirestore.updateDocument({
+    reference: eventRef,
+    data: { ratings: updatedRatings },
   });
 };

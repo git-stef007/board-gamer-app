@@ -129,7 +129,8 @@ const GroupDetails: React.FC = () => {
                     >
                       <IonLabel>
                         <h2>{event.name}</h2>
-                        <p>{new Date(event.datetime).toLocaleString("de-DE")}</p>
+                        <p>{firestoreTimestampToDate(event.datetime).toLocaleString("de-DE")}</p>
+                        <p>{event.location}</p>
                       </IonLabel>
                     </IonItem>
                   ))

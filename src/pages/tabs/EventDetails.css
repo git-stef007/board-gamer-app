@@ -31,3 +31,37 @@
   margin: 4px 0;
   accent-color: var(--ion-color-primary);
 }
+
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.star-icon {
+  font-size: 32px;
+  color: var(--ion-color-warning);
+  cursor: pointer;
+}
+
+.rating-category {
+  margin-bottom: 16px;
+}
+
+.stars {
+  display: flex;
+  gap: 6px;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.star {
+  color: lightgray;
+  transition: color
+
+}
+
+.star.filled {
+  color: #f5b301; 
+}

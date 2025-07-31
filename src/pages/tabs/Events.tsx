@@ -253,7 +253,8 @@ const Events: React.FC = () => {
                     <strong>Ort:</strong> {event.location}
                   </p>
                   <p className="event-info">
-                    <strong>Gastgeber:</strong> {event.hostName || event.host}
+                    <strong>Gastgeber:</strong> {user.displayName}  
+                    {/* {user.displayName ||event.hostName || event.host} */}
                   </p>
                 </IonCardContent>
               </IonCard>
